@@ -27,13 +27,10 @@
 	<script type="text/javascript">var g_sPubMap = "<?= Zend_Registry::get("baseurl"); ?>";</script>
 
 	<link rel="stylesheet" type="text/css" href="<?= Zend_Registry::get('baseurl'); ?>public/styles/bootstrap-3.3.4/css/bootstrap.min.css">
-	<?php if ( APPLICATION_ENV === "production" ): ?>
-		<link rel="stylesheet" type="text/css" href="<?= Zend_Registry::get('baseurl'); ?>public/styles/min-1.0.0.css">
-	<?php else: ?>
-		<link rel="stylesheet" type="text/css" href="<?= Zend_Registry::get('baseurl'); ?>public/styles/voetbaloog.css">
-		<link rel="stylesheet" type="text/css" href="<?= Zend_Registry::get('baseurl'); ?>public/styles/flaticon.css">
-		<link rel="stylesheet" type="text/css" href="<?= Zend_Registry::get('baseurl'); ?>public/styles/bootstrap_custom.css">
-	<?php endif ?>
+    <link rel="stylesheet" type="text/css" href="<?= Zend_Registry::get('baseurl'); ?>public/styles/voetbaloog.css">
+    <link rel="stylesheet" type="text/css" href="<?= Zend_Registry::get('baseurl'); ?>public/styles/flaticon.css">
+    <link rel="stylesheet" type="text/css" href="<?= Zend_Registry::get('baseurl'); ?>public/styles/bootstrap_custom.css">
+
 
 	<?php if ( $this->angular === true ): ?>
 		<link rel="stylesheet" type="text/css" href="<?= Zend_Registry::get('jsthirdparties'); ?>noUiSlider.8.1.0/nouislider.css">
@@ -169,8 +166,7 @@
 	<div class="row" id="ft">
 		<div class="col-xs-12 col-sm-4">
 			<h3>contact</h3>
-			<div><span class="glyphicon glyphicon-phone"></span> +31 614363514</div>
-			<div><span class="glyphicon glyphicon-envelope"></span> coendunnink@gmail.com</div>
+			<div><span class="glyphicon glyphicon-envelope"></span> cdkdev@pm.me</div>
 		</div>
 		<div class="col-xs-12 col-sm-4">
 			<h3>projecten</h3>
