@@ -45,13 +45,10 @@
 	<script src='<?= Zend_Registry::get('baseurl'); ?>public/styles/bootstrap-3.3.4/js/bootstrap.min.js'></script>
 	<script src='<?= Zend_Registry::get("jslibrary"); ?>IManager.js'></script>
 
-	<?php if ( APPLICATION_ENV === "production" ): ?>
-		<script src="<?= Zend_Registry::get("jslibrary") ?>min-1.0.0.js"></script>
-	<?php else: ?>
-		<script src="<?= Zend_Registry::get("jslibrary"); ?>Point.js"></script>
-		<script src="<?= Zend_Registry::get("jslibrary"); ?>DivHelper.js"></script>
-		<script src="<?= Zend_Registry::get("jslibrary"); ?>AssociativeArray.js"></script>
-	<?php endif ?>
+    <script src="<?= Zend_Registry::get("jslibrary"); ?>Point.js"></script>
+    <script src="<?= Zend_Registry::get("jslibrary"); ?>DivHelper.js"></script>
+    <script src="<?= Zend_Registry::get("jslibrary"); ?>AssociativeArray.js"></script>
+
 
 	<?php if ( $this->angular === true ): ?>
 		<script src='//ajax.googleapis.com/ajax/libs/angularjs/1.4.7/angular.js'></script>
