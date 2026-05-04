@@ -1,0 +1,49 @@
+<?xml version="1.0"?>
+<psalm
+    errorLevel="3"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns="https://getpsalm.org/schema/config"
+    xsi:schemaLocation="https://getpsalm.org/schema/config vendor/vimeo/psalm/config.xsd"
+>
+    <projectFiles>
+        <directory name="app_voetbaloog/library"/>
+
+        <ignoreFiles>
+            <directory name="ThirdParties"/>
+            <directory name="library/"/>
+            <directory name="apps/"/>
+        </ignoreFiles>
+    </projectFiles>
+
+    <issueHandlers>
+
+<!--        <InvalidArgument errorLevel="suppress" />-->
+<!--        <MixedArgument errorLevel="suppress" />-->
+<!--        <InvalidOperand errorLevel="suppress" />-->
+<!--        <PossiblyUnusedMethod errorLevel="suppress" />-->
+<!--        <PossiblyUnusedProperty errorLevel="suppress" />-->
+<!--        <UnusedParam errorLevel="suppress" />-->
+<!--        <UnusedProperty errorLevel="suppress" />-->
+<!--        <InaccessibleMethod errorLevel="suppress" />-->
+<!--        <TooFewArguments errorLevel="suppress" />-->
+<!--        <PossiblyNullReference errorLevel="suppress" />-->
+<!--        <MixedAssignment errorLevel="suppress" />-->
+<!--        <ClassMustBeFinal errorLevel="suppress" />-->
+<!--        <MissingPropertyType errorLevel="suppress" />-->
+<!--        <DeprecatedConstant errorLevel="suppress" />-->
+<!--        <MixedMethodCall errorLevel="suppress" />-->
+<!--        <UndefinedMethod errorLevel="suppress" />-->
+<!--        <UndefinedTrait errorLevel="suppress" />-->
+<!--        <ImplicitToStringCast errorLevel="suppress" />-->
+<!--        <MissingOverrideAttribute errorLevel="suppress" />-->
+<!--        <MethodSignatureMismatch errorLevel="suppress" />-->
+<!--        <MixedReturnTypeCoercion errorLevel="suppress" />-->
+<!--        <MixedReturnStatement errorLevel="suppress" />-->
+<!--        <MethodSignatureMustProvideReturnType errorLevel="suppress" />-->
+
+    </issueHandlers>
+
+    <plugins>
+        <pluginClass class="Psalm\PhpUnitPlugin\Plugin"/>
+    </plugins>
+</psalm>

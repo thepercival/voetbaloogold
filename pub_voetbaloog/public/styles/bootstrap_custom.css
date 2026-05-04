@@ -36,6 +36,9 @@ nav.header{
     background-color: #135113;
     border-width: 0px;
 }
+nav.header.navbar-non-production {
+    background-color: #ff0000;
+}
 .navbar-brand {
     height: 47px;
 }
