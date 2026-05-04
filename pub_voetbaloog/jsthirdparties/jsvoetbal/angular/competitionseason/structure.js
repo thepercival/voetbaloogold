@@ -220,7 +220,10 @@ appVoetbal.controller( "CompSeasonCtrl", [ '$scope', '$http', 'csFactory', 'name
     this.getNrOfToPoulePlaces = function( round ){
         var nrOfToPoulePlaces = 0;
         for ( var nI = 0 ; nI < round.toqualifyrules.length ; nI++ ) {
-            nrOfToPoulePlaces += round.toqualifyrules[nI].frompouleplaces.length;
+            // Count actual places in the next round, not source places.
+            if ( round.toqualifyrules[nI].topouleplaces != undefined ) {
+                nrOfToPoulePlaces += round.toqualifyrules[nI].topouleplaces.length;
+            }
         }
         return nrOfToPoulePlaces;
     }
