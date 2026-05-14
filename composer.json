@@ -11,6 +11,18 @@
     "vimeo/psalm": "^6.0",
     "psalm/plugin-phpunit": "^0.19"
   },
+  "autoload": {
+    "psr-4": {
+      "TBS\\": "ThirdParties/TBS/library/TBS/",
+      "League\\Tactician\\": "ThirdParties/Tactician/src/"
+    },
+    "psr-0": {
+      "Zend_": "ThirdParties/ZendFramework/library/"
+    },
+    "classmap": [
+      "library/"
+    ]
+  },
   "scripts": {
     "start": [
       "Composer\\Config::disableProcessTimeout",
