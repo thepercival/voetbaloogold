@@ -131,13 +131,13 @@ class Voetbal_ApiController extends Zend_Controller_Action
                     $arrRoundPouleOffset[$nRid] = $nOffset;
                 }
 
-                $fnIndexToLetter = function(int $n): string {
+                $fnIndexToLetter = function (int $n): string {
                     return $n < 26
                         ? chr(65 + $n)
                         : chr(65 + intdiv($n - 26, 26)) . chr(65 + (($n - 26) % 26));
                 };
 
-                $fnLabel = function(array $arrRef) use ($arrAllPoulePlaces, $arrAllPoules, $arrRoundPouleOffset, $fnIndexToLetter): string {
+                $fnLabel = function (array $arrRef) use ($arrAllPoulePlaces, $arrAllPoules, $arrRoundPouleOffset, $fnIndexToLetter): string {
                     $nPPId = $arrRef['id'] ?? $arrRef['cacheid'] ?? null;
                     $arrPP = $arrAllPoulePlaces[$nPPId] ?? $arrRef;
                     $nPlaceNr = ($arrPP['number'] ?? 0) + 1;
