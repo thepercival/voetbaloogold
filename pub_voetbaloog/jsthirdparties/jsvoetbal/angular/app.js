@@ -107,6 +107,17 @@ appVoetbal.factory('nameFactory', function( ) {
         return sRoundName;
     };
 
+    function indexToLetter(n) {
+        var result = '';
+        n = n + 1;
+        while (n > 0) {
+            n--;
+            result = String.fromCharCode(65 + (n % 26)) + result;
+            n = Math.floor(n / 26);
+        }
+        return result;
+    }
+
     factory.getPoule = function( poule, bWithPrefix ) {
         // get previous nr of poules
         var nPreviousNrOfPoules = 0;
@@ -122,9 +133,14 @@ appVoetbal.factory('nameFactory', function( ) {
         var sPouleName = "";
         if ( bWithPrefix == true )
             sPouleName = poule.round.type == roundtype_knockout ? "wed." : "poule";
-        sPouleName += " " + String.fromCharCode(65 + nPreviousNrOfPoules + poule.number);
+        sPouleName += " " + indexToLetter(nPreviousNrOfPoules + poule.number);
         return sPouleName;
     };
+
+    factory.isSingle = function( frompouleplaces, toppouleplaces )
+    {
+        return ( frompouleplaces.length == 1 && toppouleplaces.length == 1 );
+    }
 
     factory.getPoulePlace = function( pouleplace ) {
 
@@ -137,7 +153,9 @@ appVoetbal.factory('nameFactory', function( ) {
 
         if ( frompouleplaces != undefined ) {
             var sPoulePlaceName = "";
-            if ( pouleplace.fromqualifyrule.config != null ){
+
+            // console.log('pouleplace.fromqualifyrule', pouleplace);
+            if ( this.isSingle( frompouleplaces, pouleplace.fromqualifyrule.topouleplaces ) === false ){
                 var arrToPoulePlaces = pouleplace.fromqualifyrule.topouleplaces;
                 var nIndex = arrToPoulePlaces.findIndex( function(x) { return x == pouleplace; } );
 
@@ -147,23 +165,17 @@ appVoetbal.factory('nameFactory', function( ) {
                 {
                     var nPouleNrPow = Math.pow( 2, nPouleNumber );
                     if ( ( nPouleNrPow & nPouleNumbersPow ) == nPouleNrPow ) {
-                        sPoulePlaceName += String.fromCharCode(65 + nPouleNumber);
+                        sPoulePlaceName += indexToLetter(nPouleNumber);
                     }
                     nPouleNumber++;
                 }
             }
             else {
-                if ( frompouleplaces.length > 3 )
-                {
-                    sPoulePlaceName += factory.getPoule( frompouleplaces[0].poule, false );
-                    sPoulePlaceName += "..";
-                    sPoulePlaceName += factory.getPoule( frompouleplaces[ frompouleplaces.length - 1 ].poule, false );
-                }
-                else {
-                    for ( var nI = 0 ; nI < frompouleplaces.length ; nI++ ){
-                        sPoulePlaceName += factory.getPoule( frompouleplaces[nI].poule, false );
-                    }
-                }
+                var nIndex = pouleplace.fromqualifyrule.topouleplaces.findIndex( function(x) { return x == pouleplace; } );
+                var fromPoulePlace = frompouleplaces[nIndex];
+                sPoulePlaceName += factory.getPoule( fromPoulePlace.poule, false );
+                sPoulePlaceName += ( fromPoulePlace.number + 1 );
+                return sPoulePlaceName;
             }
 
             sPoulePlaceName += ( frompouleplaces[0].number + 1 );

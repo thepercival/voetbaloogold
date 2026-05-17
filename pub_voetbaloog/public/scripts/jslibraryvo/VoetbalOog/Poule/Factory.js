@@ -9,6 +9,17 @@ function VoetbalOog_Poule_Factory()
 			// ...
 		}
 
+		function indexToLetter(n) {
+			var result = '';
+			n = n + 1;
+			while (n > 0) {
+				n--;
+				result = String.fromCharCode(65 + (n % 26)) + result;
+				n = Math.floor(n / 26);
+			}
+			return result;
+		}
+
 		return { 
 			createObjectsFromJSON: function ( oJSONs ) 
 			{
@@ -88,7 +99,7 @@ function VoetbalOog_Poule_Factory()
 				var sPouleName = "";
 				if ( bWithPrefix == true )
 					sPouleName = oPoule.getRound().getType() == VoetbalOog_Round.TYPE_KNOCKOUT ? "wed. " : "poule ";
-				sPouleName += String.fromCharCode(65 + nPreviousNrOfPoules + oPoule.getNumber() );
+				sPouleName += indexToLetter(nPreviousNrOfPoules + oPoule.getNumber());
 				return sPouleName;
 			}
 		};

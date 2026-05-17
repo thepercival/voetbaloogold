@@ -9,6 +9,17 @@ function VoetbalOog_PoulePlace_Factory()
 			// ...
 		}
 
+		function indexToLetter(n) {
+			var result = '';
+			n = n + 1;
+			while (n > 0) {
+				n--;
+				result = String.fromCharCode(65 + (n % 26)) + result;
+				n = Math.floor(n / 26);
+			}
+			return result;
+		}
+
 		return {
             createArrayFromJSON: function ( oJSONs )
             {
@@ -129,7 +140,7 @@ function VoetbalOog_PoulePlace_Factory()
                     {
                         var nPouleNrPow = Math.pow( 2, nPouleNumber );
                         if ( ( nPouleNrPow & nPouleNumbersPow ) == nPouleNrPow ) {
-                            sPoulePlaceName += String.fromCharCode(65 + nPouleNumber);
+                            sPoulePlaceName += indexToLetter(nPouleNumber);
                         }
 						nPouleNumber++;
                     }
@@ -149,9 +160,11 @@ function VoetbalOog_PoulePlace_Factory()
                      }*/
                 }
                 else {
-					for ( var nI = 0 ; nI < arrFromPoulePlaces.length ; nI++ ) {
-						sPoulePlaceName += VoetbalOog_Poule_Factory().getName( arrFromPoulePlaces[nI].getPoule(), false );
-					}
+                    var nIndex = oFromQualifyRule.getToPoulePlaceIndex( oPoulePlace );
+                    var oFromPoulePlace = arrFromPoulePlaces[nIndex];
+                    sPoulePlaceName += VoetbalOog_Poule_Factory().getName( oFromPoulePlace.getPoule(), false );
+                    sPoulePlaceName += ( oFromPoulePlace.getNumber() + 1 );
+                    return sPoulePlaceName;
                 }
 
                 // add number

@@ -338,6 +338,7 @@ appVoetbal.controller( "CompSeasonCtrl", [ '$scope', '$http', 'csFactory', 'name
 
     function updateQualifyRules( fromRound, toRound, newnrofqualifyers )
     {
+        console.log('updateQualifyRules');
         var roundpouleplacespernumber = createPoulePlacesPerNumber( fromRound );
         var nextroundpouleplaceszigzag = createPoulePlacesZigZag( toRound );
         for ( var nI = 0 ; nI < roundpouleplacespernumber.length ; nI++ ){
