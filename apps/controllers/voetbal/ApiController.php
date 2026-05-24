@@ -227,8 +227,7 @@ class Voetbal_ApiController extends Zend_Controller_Action
                     $nCurrentRoundId = $arrCurrentRound['id'] ?? null;
                     $arrRound2Poules = array_values(array_filter(
                         $arrAllPoules,
-                        fn(array $arrPoule): bool =>
-                            (($arrPoule['round']['id'] ?? $arrPoule['round']['cacheid'] ?? null) === $nCurrentRoundId)
+                        fn(array $arrPoule): bool => (($arrPoule['round']['id'] ?? $arrPoule['round']['cacheid'] ?? null) === $nCurrentRoundId)
                     ));
                     usort($arrRound2Poules, fn($a, $b) => ($a['number'] ?? 0) <=> ($b['number'] ?? 0));
 
