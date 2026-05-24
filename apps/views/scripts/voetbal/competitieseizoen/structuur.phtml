@@ -1,10 +1,10 @@
 <ul class="progress-indicator">
-    <li class="completed">
-        <a href="<?= $this->url ?>/<?= $this->extraurlparams ?>subject/teams/" style=""><span class="bubble"></span><?= $this->oCompetitionSeason->hasGames() ? '<i class="glyphicon glyphicon-check"></i>' : null ?>teams<?= $this->oCompetitionSeason->hasGames() ? ", velden & scheidsrechters" : null ?></a>
-    </li>
-    <li class="completed">
-        <span class="bubble"></span><i class="glyphicon glyphicon-check"></i>structuur
-    </li>
+	<li class="completed">
+		<a href="<?= $this->url ?>/<?= $this->extraurlparams ?>subject/teams/" style=""><span class="bubble"></span><?= $this->oCompetitionSeason->hasGames() ? '<i class="glyphicon glyphicon-check"></i>' : null ?>teams<?= $this->oCompetitionSeason->hasGames() ? ", velden & scheidsrechters" : null ?></a>
+	</li>
+	<li class="completed">
+		<span class="bubble"></span><i class="glyphicon glyphicon-check"></i>structuur
+	</li>
 	<li class="<?= !$this->oCompetitionSeason->hasGames() ? 'danger' : null ?>">
 		<a href="<?= $this->url ?>/<?= $this->extraurlparams ?>subject/planning/" style=""><span class="bubble"></span><?= $this->oCompetitionSeason->hasGames() ? '<i class="glyphicon glyphicon-check"></i>' : null ?>planning</a>
 	</li>
@@ -78,7 +78,7 @@
 		</div>
 	</div>
 	-->
-<!--
+	<!--
 	<div ng-controller="ModalDemoCtrl">
 		<div style="text-align: center;">
 			<button role="button" class="btn btn-default" ng-click="open('md')"><span class="glyphicon glyphicon-circle-arrow-down"></span>&nbsp;voeg {{ competitionseason.rounds.length == 0 ? 'eerste' : 'volgende' }} ronde toe&nbsp;<span class="glyphicon glyphicon-circle-arrow-down"></span></button>
@@ -226,7 +226,9 @@
 	<hr>
 	<form ng-submit="csstructure.processStructureForm()">
 		<div style="text-align: center; margin-top:10px;">
-			<div ngif="csstructure.savestate != undefined" class="alert alert-{{ csstructure.savestate.type }}"><p class="alert-link">{{ csstructure.savestate.message }}</p></div>
+			<div ngif="csstructure.savestate != undefined" class="alert alert-{{ csstructure.savestate.type }}">
+				<p class="alert-link">{{ csstructure.savestate.message }}</p>
+			</div>
 			<button role="button" class="btn btn-primary save-structure"><span class="glyphicon glyphicon-save"></span>&nbsp;opslaan</button>
 		</div>
 	</form>

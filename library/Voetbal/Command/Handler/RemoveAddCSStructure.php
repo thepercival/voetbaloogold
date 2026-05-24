@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Created by PhpStorm.
  * User: coen
@@ -8,7 +9,7 @@
 
 class Voetbal_Command_Handler_RemoveAddCSStructure
 {
-    public function handle( Voetbal_Command_RemoveAddCSStructure $command )
+    public function handle(Voetbal_Command_RemoveAddCSStructure $command)
     {
         $oRoundDbWriter = Voetbal_Round_Factory::createDbWriter();
         $oPouleDbWriter = Voetbal_Poule_Factory::createDbWriter();
@@ -18,7 +19,7 @@ class Voetbal_Command_Handler_RemoveAddCSStructure
 
         $oRounds = $command->getCompetitionSeason()->getRounds();
         $arrTeamsOldFirstRound = null;
-        if ( $command->getCompetitionSeason()->getAssociation() === null and $oRounds->first() !== null ) {
+        if ($command->getCompetitionSeason()->getAssociation() === null and $oRounds->first() !== null) {
             $arrTeamsOldFirstRound = $oRounds->first()->getTeamsByPlace();
         }
 
@@ -145,20 +146,20 @@ class Voetbal_Command_Handler_RemoveAddCSStructure
         $arrRounds = $arrStructure["rounds"];
         foreach ($arrRounds as $arrRound) {
             $oRound = Voetbal_Round_Factory::createObject();
-            $sId = array_key_exists( '$$hashKey', $arrRound ) ? $arrRound['$$hashKey'] : "__NEW__" . $nIdIt++;
-            $oRound->putId( $sId );
-            $oRound->putCompetitionSeason( $command->getCompetitionSeason() );
+            $sId = array_key_exists('$$hashKey', $arrRound) ? $arrRound['$$hashKey'] : "__NEW__" . $nIdIt++;
+            $oRound->putId($sId);
+            $oRound->putCompetitionSeason($command->getCompetitionSeason());
             // $oRound->putName( "tmp".$arrRound['$$hashKey'] );
             $oRound->putNumber($arrRound["number"]);
-            $oRound->putSemiCompetition( $arrRound["semicompetition"] );
+            $oRound->putSemiCompetition($arrRound["semicompetition"]);
             $oRounds->add($oRound);
 
             $arrPoules = $arrRound["poules"];
             foreach ($arrPoules as $arrPoule) {
                 // $sHashKey = "WINNER"  // $arrRound["type"]
-                $sId = array_key_exists( '$$hashKey', $arrPoule ) ? $arrPoule['$$hashKey'] : "__NEW__" . $nIdIt++;
+                $sId = array_key_exists('$$hashKey', $arrPoule) ? $arrPoule['$$hashKey'] : "__NEW__" . $nIdIt++;
                 $oPoule = Voetbal_Poule_Factory::createObject();
-                $oPoule->putId( $sId );
+                $oPoule->putId($sId);
                 $oPoule->putNumber($arrPoule["number"]);
                 $oPoule->putRound($oRound);
                 // $oPoule->putName();
@@ -167,7 +168,7 @@ class Voetbal_Command_Handler_RemoveAddCSStructure
                 // Kopieer pouleplaces
                 $arrPoulePlaces = $arrPoule["places"];
                 foreach ($arrPoulePlaces as $arrPoulePlace) {
-                    $sId = array_key_exists( '$$hashKey', $arrPoulePlace ) ? $arrPoulePlace['$$hashKey'] : "__NEW__" . ( array_key_exists( 'id', $arrPoulePlace ) ? $arrPoulePlace['id'] : $nIdIt++ );
+                    $sId = array_key_exists('$$hashKey', $arrPoulePlace) ? $arrPoulePlace['$$hashKey'] : "__NEW__" . (array_key_exists('id', $arrPoulePlace) ? $arrPoulePlace['id'] : $nIdIt++);
                     $oPoulePlace = Voetbal_PoulePlace_Factory::createObject();
                     $oPoulePlace->putId($sId);
                     $oPoulePlace->putPoule($oPoule);
@@ -179,8 +180,7 @@ class Voetbal_Command_Handler_RemoveAddCSStructure
             }
 
             // Kopieer qualifyrules
-            if ( $oPreviousRound !== null )
-            {
+            if ($oPreviousRound !== null) {
                 $arrQualifyRules = $arrRound["fromqualifyrules"];
                 $nPrevRoundNr = $oPreviousRound->getNumber();
                 $arrRoundMapping = $arrSeasonMapping[$nPrevRoundNr] ?? null;
@@ -197,13 +197,13 @@ class Voetbal_Command_Handler_RemoveAddCSStructure
                     for ($nI = 0; $nI < count($arrQualifyRule["frompouleplaces"]); $nI++) {
                         $arrFromPoulePlace = $arrQualifyRule["frompouleplaces"][$nI];
                         $sFromPoulePlaceHashKey = $arrFromPoulePlace['$$hashKey'];
-                        $oFromPoulePlace = $oPoulePlaces[ $sFromPoulePlaceHashKey ];
+                        $oFromPoulePlace = $oPoulePlaces[$sFromPoulePlaceHashKey];
                         // var_dump( 'sFromPoulePlaceHashKey:' . $sFromPoulePlaceHashKey );
                         if ($oFromPoulePlace === null) {
                             $oFromPoulePlace = $oPoulePlaces["__NEW__" . $sFromPoulePlaceHashKey];
                         }
                         if ($oFromPoulePlace === null) {
-                            throw new Exception("kan from-pouleplace(".$sFromPoulePlaceHashKey.") niet vinden", E_ERROR);
+                            throw new Exception("kan from-pouleplace(" . $sFromPoulePlaceHashKey . ") niet vinden", E_ERROR);
                         }
 
                         $oToPoulePlace = null;
@@ -214,7 +214,7 @@ class Voetbal_Command_Handler_RemoveAddCSStructure
                             // var_dump( 'sToPoulePlaceHashKey:' . $sToPoulePlaceHashKey );
                         }
                         // if ($oToPoulePlace === null) {
-                           // $oToPoulePlace = $oPoulePlaces["__NEW__" . $sToPoulePlaceHashKey];
+                        // $oToPoulePlace = $oPoulePlaces["__NEW__" . $sToPoulePlaceHashKey];
                         //}
                         // $oToPoulePlace can be null
 
@@ -224,8 +224,10 @@ class Voetbal_Command_Handler_RemoveAddCSStructure
                         //   Skip loser slots (no corresponding topouleplaces entry) so they stay null.
                         //   Using $nPrevRoundNr instead of counting frompouleplaces/topouleplaces avoids
                         //   breakage when old DB data has wrong 1:1 qualify-rule counts for round 1+.
-                        if ((int)$arrQualifyRule["confignr"] === 0
-                            && $arrActiveSingleRuleMapping !== null) {
+                        if (
+                            (int)$arrQualifyRule["confignr"] === 0
+                            && $arrActiveSingleRuleMapping !== null
+                        ) {
                             $nFromPouleNr = $oFromPoulePlace->getPoule()->getNumber();
                             $nFromPlaceNr = $oFromPoulePlace->getNumber();
                             if ($nPrevRoundNr === 0) {
@@ -252,8 +254,10 @@ class Voetbal_Command_Handler_RemoveAddCSStructure
                         // Apply season-specific multi-rule mapping (3rd-place rules, round 0→1 only).
                         // The default Angular zigzag assigns the wrong toPoulePlace slots when single-rule targets
                         // deviate from the default; replace with the pre-computed correct slots.
-                        if ((int)$arrQualifyRule["confignr"] !== 0
-                            && $arrActiveMultiRuleToPlaces !== null) {
+                        if (
+                            (int)$arrQualifyRule["confignr"] !== 0
+                            && $arrActiveMultiRuleToPlaces !== null
+                        ) {
                             if (array_key_exists($nI, $arrActiveMultiRuleToPlaces)) {
                                 [$nToPouleNr, $nToPlaceNr] = $arrActiveMultiRuleToPlaces[$nI];
                                 $nToRoundNr = $oRound->getNumber();
@@ -286,9 +290,9 @@ class Voetbal_Command_Handler_RemoveAddCSStructure
         $oPPQualifyRuleDbWriter->write();
 
         // check config-item if teams should be created here, (only for fctoernooi )
-//        if ( false /* and check config-item */ and $arrTeamsOldFirstRound !== null ) {
-//            $supplementTeamsCommand = new Voetbal_Command_SupplementTeams( $oRounds->first(), $arrTeamsOldFirstRound );
-//           //  $command->getBus()->handle($supplementTeamsCommand);
-//        }
+        //        if ( false /* and check config-item */ and $arrTeamsOldFirstRound !== null ) {
+        //            $supplementTeamsCommand = new Voetbal_Command_SupplementTeams( $oRounds->first(), $arrTeamsOldFirstRound );
+        //           //  $command->getBus()->handle($supplementTeamsCommand);
+        //        }
     }
 }
