@@ -146,8 +146,8 @@ class Voetbal_Game_Factory extends Object_Factory_Db_JSON implements Voetbal_Gam
 			"\"Id\":".$oObject->getId().",".
 			"\"HomePoulePlace\":".Voetbal_PoulePlace_Factory::convertObjectToJSON( $oObject->getHomePoulePlace(), $nDataFlag ).",".
 			"\"AwayPoulePlace\":".Voetbal_PoulePlace_Factory::convertObjectToJSON( $oObject->getAwayPoulePlace(), $nDataFlag ).",".
-			"\"HomeGoals\":".$oObject->getHomeGoals().",".
-			"\"AwayGoals\":".$oObject->getAwayGoals().",".
+			"\"HomeGoals\":".($oObject->getHomeGoals() === null ? 'null' : $oObject->getHomeGoals()).",".
+			"\"AwayGoals\":".($oObject->getAwayGoals() === null ? 'null' : $oObject->getAwayGoals()).",".
 			"\"HomeGoalsExtraTime\":".$oObject->getHomeGoalsExtraTime().",".
 			"\"AwayGoalsExtraTime\":".$oObject->getAwayGoalsExtraTime().",".
 			"\"HomeGoalsPenalty\":".$oObject->getHomeGoalsPenalty().",".

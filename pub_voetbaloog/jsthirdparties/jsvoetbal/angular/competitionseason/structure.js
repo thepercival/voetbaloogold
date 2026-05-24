@@ -114,18 +114,32 @@ appVoetbal.controller( "CompSeasonCtrl", [ '$scope', '$http', '$sce', 'csFactory
                 var finalRound = rounds[rounds.length - 2] || rounds[rounds.length - 1];
                 var tree = buildPoule(finalRound.poules[0]);
 
-                // Console output
-                function printTree(node) {
-                    if (node.leaf) { console.log('  ' + node.leaf); return; }
-                    console.group(node.match);
-                    node.sides.forEach(printTree);
-                    console.groupEnd();
-                }
+                // Flat knockout table: round/poule → sources, for SQL mapping
                 console.log('');
                 console.log('══════════════════════════════════════');
-                console.log('  Bracket (from qualify rules)');
+                console.log('  Knockout poule sources (for SQL)');
                 console.log('══════════════════════════════════════');
-                printTree(tree);
+                rounds.forEach(function(round) {
+                    if (round.type !== that.roundtype_knockout) { return; }
+                    console.log('--- Round ' + round.number + ' ---');
+                    round.poules.forEach(function(poule) {
+                        function srcLabel(place) {
+                            if (!place) { return '?'; }
+                            var qr = place.fromqualifyrule;
+                            if (!qr) { return nameFactory.getPoulePlace(place); }
+                            var fp = qr.frompouleplaces;
+                            if (fp.length === 1) {
+                                // single source: show source poule name + place number
+                                return nameFactory.getPoule(fp[0].poule, true) + ' pl' + fp[0].number;
+                            }
+                            // multi-source (e.g. best-third rules)
+                            return fp.map(function(p) { return nameFactory.getPoulePlace(p); }).join('/');
+                        }
+                        console.log('  Poule ' + poule.number
+                            + ' (' + nameFactory.getPoule(poule, true) + '): '
+                            + srcLabel(poule.places[0]) + ' vs ' + srcLabel(poule.places[1]));
+                    });
+                });
 
                 // HTML for screen
                 function buildHtml(node) {
