@@ -151,16 +151,17 @@ class Voetbal_ApiController extends Zend_Controller_Action
                     return $fnIndexToLetter($nGlobalPouleNr) . $nPlaceNr;
                 };
 
-                $arrSecondRound = null;
-                foreach ($arrAllRounds as $arrRound) {
-                    if (($arrRound['number'] ?? null) === 1) {
-                        $arrSecondRound = $arrRound;
-                        break;
-                    }
-                }
-                if ($arrSecondRound !== null) {
-                    error_log("=== fromqualifyrules round 2 ===");
-                    foreach ($arrSecondRound['fromqualifyrules'] as $arrRef) {
+                // Log qualify rules and poule layouts for every round after the group stage (number >= 1)
+                $arrKnockoutRounds = array_values(array_filter(
+                    $arrAllRounds,
+                    fn($r) => ($r['number'] ?? -1) >= 1
+                ));
+                usort($arrKnockoutRounds, fn($a, $b) => ($a['number'] ?? 0) <=> ($b['number'] ?? 0));
+
+                foreach ($arrKnockoutRounds as $arrCurrentRound) {
+                    $nCurrentRoundNr = ($arrCurrentRound['number'] ?? '?') + 1; // 1-based label
+                    error_log("=== fromqualifyrules round $nCurrentRoundNr ===");
+                    foreach ($arrCurrentRound['fromqualifyrules'] as $arrRef) {
                         $nId = $arrRef['id'] ?? $arrRef['cacheid'] ?? null;
                         $arrQR = $arrAllQRs[$nId] ?? null;
                         if ($arrQR === null) {
@@ -190,7 +191,7 @@ class Voetbal_ApiController extends Zend_Controller_Action
                     }
 
                     // Build reverse map: pouleplace id → from-label for each toPoulePlace in any qualify rule
-                    error_log("=== round 2 poules + pouleplaces ===");
+                    error_log("=== round $nCurrentRoundNr poules + pouleplaces ===");
                     $arrToPPLabel = [];
                     foreach ($arrAllQRs as $arrQR) {
                         if ($arrQR['confignr'] === 0) {
@@ -222,13 +223,12 @@ class Voetbal_ApiController extends Zend_Controller_Action
                         }
                     }
 
-                    // Collect round-2 poules sorted by their poule number
+                    // Collect current-round poules sorted by their poule number
+                    $nCurrentRoundId = $arrCurrentRound['id'] ?? null;
                     $arrRound2Poules = array_values(array_filter(
                         $arrAllPoules,
-                        function (array $arrPoule) use ($arrRoundNumberById): bool {
-                            $nRid = $arrPoule['round']['id'] ?? $arrPoule['round']['cacheid'] ?? null;
-                            return ($arrRoundNumberById[$nRid] ?? null) === 1;
-                        }
+                        fn(array $arrPoule): bool =>
+                            (($arrPoule['round']['id'] ?? $arrPoule['round']['cacheid'] ?? null) === $nCurrentRoundId)
                     ));
                     usort($arrRound2Poules, fn($a, $b) => ($a['number'] ?? 0) <=> ($b['number'] ?? 0));
 
