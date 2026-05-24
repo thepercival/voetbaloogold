@@ -188,6 +188,71 @@ class Voetbal_ApiController extends Zend_Controller_Action
                             }
                         }
                     }
+
+                    // Build reverse map: pouleplace id → from-label for each toPoulePlace in any qualify rule
+                    error_log("=== round 2 poules + pouleplaces ===");
+                    $arrToPPLabel = [];
+                    foreach ($arrAllQRs as $arrQR) {
+                        if ($arrQR['confignr'] === 0) {
+                            $sFromLabel = $fnLabel($arrQR['frompouleplaces'][0]);
+                            $arrToRef0  = $arrQR['topouleplaces'][0] ?? null;
+                            if ($arrToRef0 !== null) {
+                                $nToId = $arrToRef0['id'] ?? $arrToRef0['cacheid'] ?? null;
+                                if ($nToId !== null) {
+                                    $arrToPPLabel[$nToId] = $sFromLabel;
+                                }
+                            }
+                        } else {
+                            $arrQRDisplay = $arrQR['config']['display'] ?? [];
+                            $arrQRFromPPs = array_values($arrQR['frompouleplaces']);
+                            $arrQRToPPs   = array_values($arrQR['topouleplaces']);
+                            foreach ($arrQRToPPs as $nToIdx2 => $arrToRef2) {
+                                $nBitmask2   = $arrQRDisplay[$nToIdx2] ?? 0;
+                                $arrFrLabels = [];
+                                foreach ($arrQRFromPPs as $nFrIdx => $arrFrRef) {
+                                    if ($nBitmask2 & (1 << $nFrIdx)) {
+                                        $arrFrLabels[] = $fnLabel($arrFrRef);
+                                    }
+                                }
+                                $nToId2 = $arrToRef2['id'] ?? $arrToRef2['cacheid'] ?? null;
+                                if ($nToId2 !== null) {
+                                    $arrToPPLabel[$nToId2] = '[' . implode(',', $arrFrLabels) . ']';
+                                }
+                            }
+                        }
+                    }
+
+                    // Collect round-2 poules sorted by their poule number
+                    $arrRound2Poules = array_values(array_filter(
+                        $arrAllPoules,
+                        function (array $arrPoule) use ($arrRoundNumberById): bool {
+                            $nRid = $arrPoule['round']['id'] ?? $arrPoule['round']['cacheid'] ?? null;
+                            return ($arrRoundNumberById[$nRid] ?? null) === 1;
+                        }
+                    ));
+                    usort($arrRound2Poules, fn($a, $b) => ($a['number'] ?? 0) <=> ($b['number'] ?? 0));
+
+                    foreach ($arrRound2Poules as $arrPoule2) {
+                        $nRid2    = $arrPoule2['round']['id'] ?? $arrPoule2['round']['cacheid'] ?? null;
+                        $nOffset2 = $arrRoundPouleOffset[$nRid2] ?? 0;
+                        $sPLetter = $fnIndexToLetter(($arrPoule2['number'] ?? 0) + $nOffset2);
+                        $nPouleId2 = $arrPoule2['id'] ?? null;
+
+                        $arrPlaces2 = array_values(array_filter(
+                            $arrAllPoulePlaces,
+                            fn($pp) => (($pp['poule']['id'] ?? $pp['poule']['cacheid'] ?? null) === $nPouleId2)
+                        ));
+                        usort($arrPlaces2, fn($a, $b) => ($a['number'] ?? 0) <=> ($b['number'] ?? 0));
+
+                        $arrParts = [];
+                        foreach ($arrPlaces2 as $arrPP2) {
+                            $nPl2     = ($arrPP2['number'] ?? 0) + 1;
+                            $nPid2    = $arrPP2['id'] ?? null;
+                            $sFromLbl = $arrToPPLabel[$nPid2] ?? '?';
+                            $arrParts[] = "{$sPLetter}{$nPl2}<-{$sFromLbl}";
+                        }
+                        error_log(implode('  ', $arrParts));
+                    }
                 }
             }
         } catch (Exception $e) {

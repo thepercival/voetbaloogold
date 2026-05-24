@@ -219,6 +219,10 @@
 		</script>
 	</div>
 -->
+	<div ng-if="csstructure.bracketHtml" style="margin-top: 20px; padding: 0 15px;">
+		<h4>Bracket</h4>
+		<div ng-bind-html="csstructure.bracketHtml"></div>
+	</div>
 	<hr>
 	<form ng-submit="csstructure.processStructureForm()">
 		<div style="text-align: center; margin-top:10px;">

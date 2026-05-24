@@ -6,7 +6,7 @@ appVoetbal.value('noUiSliderConfig', {
     step: 1
 });
 
-appVoetbal.controller( "CompSeasonCtrl", [ '$scope', '$http', 'csFactory', 'nameFactory', function($scope, $http, csFactory, nameFactory) {
+appVoetbal.controller( "CompSeasonCtrl", [ '$scope', '$http', '$sce', 'csFactory', 'nameFactory', function($scope, $http, $sce, csFactory, nameFactory) {
 
     var that = this;
     this.csid = null;
@@ -76,6 +76,64 @@ appVoetbal.controller( "CompSeasonCtrl", [ '$scope', '$http', 'csFactory', 'name
             .$promise.then(function( response ) {
             that.competitionseason = response.data;
             console.log( that.competitionseason );
+
+            // Dynamic bracket built by traversing fromqualifyrule links (Final → groups)
+            (function() {
+                var rounds = that.competitionseason.rounds;
+                
+                // Build tree node for a knockout poule (poule is from the rounds array)
+                function buildPoule(poule) {
+                    if( poule.places.length === 0 ) {
+                        console.log('Warning: empty poule ' + nameFactory.getPoule(poule) + ' found while building bracket');
+                    }
+                    return {
+                        match: nameFactory.getPoule(poule, true),
+                        sides: [buildSlot(poule.places[0]), buildSlot(poule.places[1])]
+                    };
+                }
+
+                // Build slot: place is from rounds[r].poules[p].places[i] (has fromqualifyrule)
+                // frompouleplaces[i] items have .poule back-reference → use to look up source poule
+                function buildSlot(place) {
+                    if (!place) return { leaf: 'winner' };
+                    var qr = place.fromqualifyrule;
+                    if (!qr) return { leaf: nameFactory.getPoulePlace(place) };
+                    var fp = qr.frompouleplaces, tp = qr.topouleplaces;
+                    if (fp.length === 1 && tp.length === 1) {
+                        var srcPoule = rounds[fp[0].poule.round.number].poules[fp[0].poule.number];
+                        // Only recurse into knockout matches; group-stage sources are leaves
+                        if (srcPoule.round && srcPoule.round.type === that.roundtype_knockout) {
+                            return buildPoule(srcPoule);
+                        }
+                        return { leaf: nameFactory.getPoulePlace(place) };
+                    }
+                    return { leaf: nameFactory.getPoulePlace(place) };
+                }
+
+                // Start from the Final (second-to-last round); last round is the winner round
+                var finalRound = rounds[rounds.length - 2] || rounds[rounds.length - 1];
+                var tree = buildPoule(finalRound.poules[0]);
+
+                // Console output
+                function printTree(node) {
+                    if (node.leaf) { console.log('  ' + node.leaf); return; }
+                    console.group(node.match);
+                    node.sides.forEach(printTree);
+                    console.groupEnd();
+                }
+                console.log('');
+                console.log('══════════════════════════════════════');
+                console.log('  Bracket (from qualify rules)');
+                console.log('══════════════════════════════════════');
+                printTree(tree);
+
+                // HTML for screen
+                function buildHtml(node) {
+                    if (node.leaf) return '<li>' + node.leaf + '</li>';
+                    return '<li><strong>' + node.match + '</strong><ul>' + node.sides.map(buildHtml).join('') + '</ul></li>';
+                }
+                that.bracketHtml = $sce.trustAsHtml('<ul>' + buildHtml(tree) + '</ul>');
+            })();
 
             for (var nI = 0; nI < that.competitionseason.rounds.length; nI++) {
                 var round = that.competitionseason.rounds[nI];
