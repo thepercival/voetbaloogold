@@ -264,7 +264,7 @@ appVoetbal.controller( "CompSeasonCtrl", [ '$scope', '$http', '$sce', 'csFactory
         var nNrOfPoulePlaces = createPoulePlacesZigZag( round ).length;
         var nRoundType = round.type;
 
-        this.addRound( nNrOfPoulePlaces, nRoundType, false, true );
+        this.addRound( nNrOfPoulePlaces, nRoundType, true, true );
     };
 
     this.getNrOfPoulePlaces = function( round ){
@@ -375,7 +375,7 @@ appVoetbal.controller( "CompSeasonCtrl", [ '$scope', '$http', '$sce', 'csFactory
         while ( this.competitionseason.rounds[ round.number + 1 ] != undefined ) {
             this.removeRound( this.competitionseason.rounds );
         }
-        var nextRound = this.addRound( nNrOfTeams, null, false, true );
+        var nextRound = this.addRound( nNrOfTeams, null, true, true );
 
         updateQualifyRules( round, nextRound, newnrofqualifyers );
 
