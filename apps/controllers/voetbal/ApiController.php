@@ -62,6 +62,19 @@ class Voetbal_ApiController extends Zend_Controller_Action
                 $oDateTime = Agenda_Factory::createDateTime($oDateTime->format(Agenda_DateTime::STR_SQLDATETIME));
                 $removeAddCSGames->putStartDateTime($oDateTime);
                 $commandBus->handle($removeAddCSGames);
+            } else if ($this->getParam('subaction') === "removegames") {
+                $arrInput = json_decode(file_get_contents('php://input'), true);
+                if (!is_array($arrInput)) {
+                    throw new Exception("er is geen invoer verstuurd", E_ERROR);
+                }
+
+                $oCompetitionSeason = Voetbal_CompetitionSeason_Factory::createObjectFromDatabase((int) $arrInput["csid"]);
+
+                $handlerMiddleware = Voetbal_Command_Main_Factory::getMiddleWare();
+                $transactionMiddleware = new Voetbal_Command_Middleware_Transaction(Zend_Registry::get("db"));
+                $commandBus = new \League\Tactician\CommandBus([$transactionMiddleware, $handlerMiddleware]);
+
+                $commandBus->handle(new Voetbal_Command_RemoveCSGames($oCompetitionSeason));
             } else if ($this->getParam('subaction') === "saveproperties") {
                 $arrProperties = json_decode(file_get_contents('php://input'), true);
                 if (!is_array($arrProperties)) {

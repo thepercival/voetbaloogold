@@ -44,7 +44,22 @@ appVoetbal.controller( "GameController", [ '$http', 'csFactory', 'nameFactory', 
         csFactory.getCompetitionSeason.query( {'dataflag':nDataflag}, {'id': that.csid })
         .$promise.then(function( response ) {
             that.competitionseason = response.data;
-            // console.log( that.competitionseason );
+            var cs = that.competitionseason;
+            var totalGames = 0;
+            if ( cs && cs.rounds ) {
+                cs.rounds.forEach(function( round ) {
+                    var roundGames = 0;
+                    if ( round.poules ) {
+                        round.poules.forEach(function( poule ) {
+                            roundGames += ( poule.games ? poule.games.length : 0 );
+                        });
+                    }
+                    totalGames += roundGames;
+                    console.log( '[GameController] ronde', round.number, '— wedstrijden:', roundGames );
+                });
+            }
+            console.log( '[GameController] totaal wedstrijden:', totalGames );
+            console.log( '[GameController] "verwijder wedstrijden"-knop bestaat niet in wedstrijden.phtml (alleen in de admin-app)' );
         });
     });
 
@@ -104,6 +119,38 @@ appVoetbal.controller( "GameController", [ '$http', 'csFactory', 'nameFactory', 
         });
 
         return matched;
+    };
+
+    this.hasAnyGames = function() {
+        if ( !that.competitionseason || !that.competitionseason.rounds ) { return false; }
+        return that.competitionseason.rounds.some(function( round ) {
+            return that.hasGames( round );
+        });
+    };
+
+    this.removeGames = function() {
+        if ( !confirm('Alle wedstrijden verwijderen?') ) { return; }
+        this.plansavestate = null;
+        $http({
+            method  : 'POST',
+            url     : g_sPubMap + 'voetbal/api/competitionseason/?subaction=removegames',
+            data    : { "csid" : this.competitionseason.id },
+            headers : { 'Content-Type': 'application/x-www-form-urlencoded' }
+        })
+        .success(function(data) {
+            if (data.code == 0 ) {
+                that.plansavestate = { type: 'success', message: 'wedstrijden zijn verwijderd' };
+                that.competitionseason.rounds.forEach(function( round ) {
+                    round.poules.forEach(function( poule ) { poule.games = []; });
+                });
+            } else {
+                that.plansavestate = { type: 'danger', message: data.message };
+            }
+        })
+        .error(function(data, status, headers, config) {
+            console.error('removeGames error', status, data);
+            that.plansavestate = { type: 'danger', message: 'wedstrijden konden niet verwijderd worden' };
+        });
     };
 
     this.planGames = function() {

@@ -18,20 +18,20 @@ class Voetbal_Command_Main_Factory
 {
     private static $m_arrCommandClassToHandlerMap;
 
-    public static function getMiddleWare( $arrCommandClassToHandlerMap = [] )
+    public static function getMiddleWare($arrCommandClassToHandlerMap = [])
     {
-        $arrCompleteCommandClassToHandlerMap = array_merge( $arrCommandClassToHandlerMap, static::getCommandClassToHandlerMap() );
+        $arrCompleteCommandClassToHandlerMap = array_merge($arrCommandClassToHandlerMap, static::getCommandClassToHandlerMap());
 
         return new League\Tactician\Handler\CommandHandlerMiddleware(
             new ClassNameExtractor(),
-            new InMemoryLocator( $arrCompleteCommandClassToHandlerMap ),
+            new InMemoryLocator($arrCompleteCommandClassToHandlerMap),
             new Voetbal_Command_Main_Inflector()
         );
     }
 
     public static function getCommandClassToHandlerMap()
     {
-        if ( static::$m_arrCommandClassToHandlerMap === null ){
+        if (static::$m_arrCommandClassToHandlerMap === null) {
             static::$m_arrCommandClassToHandlerMap = array(
                 "Voetbal_Command_AddCompetition" => new Voetbal_Command_Handler_AddCompetition(),
                 "Voetbal_Command_AddCompetitionSeason" => new Voetbal_Command_Handler_AddCompetitionSeason(),
@@ -41,6 +41,7 @@ class Voetbal_Command_Main_Factory
                 "Voetbal_Command_ImportGame" => new Voetbal_Command_Handler_ImportGame(),
                 "Voetbal_Command_RemoveAddCSStructure" => new Voetbal_Command_Handler_RemoveAddCSStructure(),
                 "Voetbal_Command_RemoveCopyCSStructure" => new Voetbal_Command_Handler_RemoveCopyCSStructure(),
+                "Voetbal_Command_RemoveCSGames" => new Voetbal_Command_Handler_RemoveCSGames(),
                 "Voetbal_Command_RemoveAddCSGames" => new Voetbal_Command_Handler_RemoveAddCSGames(),
                 "Voetbal_Command_SupplementTeams" => new Voetbal_Command_Handler_SupplementTeams(),
                 "Voetbal_Command_UpdateCompetitionSeason" => new Voetbal_Command_Handler_UpdateCompetitionSeason(),
