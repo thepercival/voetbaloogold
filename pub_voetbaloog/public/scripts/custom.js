@@ -122,15 +122,6 @@ jQuery(document).ready(function ($) {
 			var oBetView = new Ctrl_BetView(g_oPool, g_oNow);
 			oBetView.show();
 
-			$el = $("#betsviewheader");
-			$('.nav-affix').affix({
-				offset: {
-					top: $el.offset().top + $el.outerHeight(true)
-				}
-			});
-
-			$('body').scrollspy( { target: '#myScrollspy' } );
-
 			oBetView.navigate( $, g_nBetViewRoundNr );
 
 			$('.betsview-right div[data-teamid]').css("cursor","pointer");

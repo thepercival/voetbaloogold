@@ -24,11 +24,11 @@ class Voetbal_Round extends Agenda_TimeSlot implements Voetbal_Round_Interface
 	protected $m_oFromQualifyRules;		// Collection
 	protected $m_oToQualifyRules;		// Collection
 
-	CONST TYPE_POULE = 1;
-	CONST TYPE_KNOCKOUT = 2;
-	CONST TYPE_WINNER = 4;
+	const TYPE_POULE = 1;
+	const TYPE_KNOCKOUT = 2;
+	const TYPE_WINNER = 4;
 
-	CONST MAX_NAME_LENGTH = 10;
+	const MAX_NAME_LENGTH = 10;
 
 	public function __construct()
 	{
@@ -46,12 +46,11 @@ class Voetbal_Round extends Agenda_TimeSlot implements Voetbal_Round_Interface
 	/**
 	 * @see Voetbal_Round_Interface::putName()
 	 */
-	public function putName( $sName )
+	public function putName($sName)
 	{
-		if ( $this->m_bObserved === true )
-		{
-			$oObjectChange = MetaData_ObjectChange_Factory::createObjectChange( $this->getId(), "Voetbal_Round::Name", $this->m_sName, $sName );
-			$this->notifyObservers( $oObjectChange );
+		if ($this->m_bObserved === true) {
+			$oObjectChange = MetaData_ObjectChange_Factory::createObjectChange($this->getId(), "Voetbal_Round::Name", $this->m_sName, $sName);
+			$this->notifyObservers($oObjectChange);
 		}
 		$this->m_sName = $sName;
 	}
@@ -61,33 +60,39 @@ class Voetbal_Round extends Agenda_TimeSlot implements Voetbal_Round_Interface
 	 */
 	public function getDisplayName()
 	{
-		$oCompetitionseason = $this->getCompetitionSeason();
-		$oRounds = $oCompetitionseason->getRounds();
+		['isPouleRound' => $bIsPouleRound, 'nFromWinning' => $nFromWinning] = $this->computeRoundPosition();
+
+		if ($bIsPouleRound)
+			return ($this->getNumber() + 1) . '<sup>' . ($this->getNumber() == 0 ? 'st' : 'd') . "e</sup> ronde";
+
+		if ($nFromWinning == 5) return "<span style='font-size: 80%'><sup>1</sup>&frasl;<sub>16</sub></span> finale";
+		if ($nFromWinning == 4) return "&frac18; finale";
+		if ($nFromWinning == 3) return "&frac14; finale";
+		if ($nFromWinning == 2) return "&frac12; finale";
+		if ($nFromWinning == 1) return "finale";
+		return "<span class='glyphicon glyphicon-star'></span>";
+	}
+
+	public function getShortName()
+	{
+		return str_replace(' finale', '', $this->getDisplayName());
+	}
+
+	private function computeRoundPosition(): array
+	{
+		$oRounds = $this->getCompetitionSeason()->getRounds();
 
 		$nPouleRounds = 0;
-		{
-			foreach( $oRounds as $oRound )
-			{
-				if ( $oRound->getType() == Voetbal_Round::TYPE_KNOCKOUT )
-					break;
-				$nPouleRounds++;
-			}
+		foreach ($oRounds as $oRound) {
+			if ($oRound->getType() == Voetbal_Round::TYPE_KNOCKOUT)
+				break;
+			$nPouleRounds++;
 		}
 
-		$sRoundName = "";
-		if ( ( $this->getNumber() + 1 ) > $nPouleRounds ) {
-			$nFromWinning = $oRounds->count() - ( $this->getNumber() + 1 );
-			if ( $nFromWinning == 5 ) { $sRoundName = "<span style='font-size: 80%'><sup>1</sup>&frasl;<sub>16</sub></span> finale"; }
-			else if ( $nFromWinning == 4 ) { $sRoundName = "&frac18; finale"; }
-			else if ( $nFromWinning == 3 ) { $sRoundName = "&frac14; finale"; }
-			else if ( $nFromWinning == 2 ) { $sRoundName = "&frac12; finale"; }
-			else if ( $nFromWinning == 1 ) { $sRoundName = "finale"; }
-			else if ( $nFromWinning == 0 ) { $sRoundName = "winnaar"; }
-		}
-		else {
-			$sRoundName = ( $this->getNumber() + 1 ) . '<sup>' . ( $this->getNumber() == 0 ? 'st' : 'd' ) . "e</sup> ronde";
-		}
-		return $sRoundName;
+		return [
+			'isPouleRound' => ($this->getNumber() + 1) <= $nPouleRounds,
+			'nFromWinning' => $oRounds->count() - ($this->getNumber() + 1),
+		];
 	}
 
 	/**
@@ -95,12 +100,11 @@ class Voetbal_Round extends Agenda_TimeSlot implements Voetbal_Round_Interface
 	 */
 	public function getPoules()
 	{
-		if ( $this->m_oPoules === null )
-		{
+		if ($this->m_oPoules === null) {
 			$oFilters = Construction_Factory::createOptions();
-			$oFilters->addFilter( "Voetbal_Poule::Round", "EqualTo", $this );
-            $oFilters->addOrder( "Voetbal_Poule::Number", false );
-			$this->m_oPoules = Voetbal_Poule_Factory::createObjectsFromDatabase( $oFilters );
+			$oFilters->addFilter("Voetbal_Poule::Round", "EqualTo", $this);
+			$oFilters->addOrder("Voetbal_Poule::Number", false);
+			$this->m_oPoules = Voetbal_Poule_Factory::createObjectsFromDatabase($oFilters);
 		}
 		return $this->m_oPoules;
 	}
@@ -113,8 +117,8 @@ class Voetbal_Round extends Agenda_TimeSlot implements Voetbal_Round_Interface
 		$oPoulePlaces = Voetbal_PoulePlace_Factory::createObjects();
 
 		$oPoules = $this->getPoules();
-		foreach ( $oPoules as $oPoule )
-			$oPoulePlaces->addCollection( $oPoule->getPlaces() );
+		foreach ($oPoules as $oPoule)
+			$oPoulePlaces->addCollection($oPoule->getPlaces());
 
 		return $oPoulePlaces;
 	}
@@ -124,13 +128,12 @@ class Voetbal_Round extends Agenda_TimeSlot implements Voetbal_Round_Interface
 	 */
 	public function getTeams()
 	{
-		if ( $this->m_oTeams === null )
-		{
+		if ($this->m_oTeams === null) {
 			$this->m_oTeams = Voetbal_Team_Factory::createObjects();
 
 			$oPoules = $this->getPoules();
-			foreach ( $oPoules as $oPoule )
-				$this->m_oTeams->addCollection( $oPoule->getTeams() );
+			foreach ($oPoules as $oPoule)
+				$this->m_oTeams->addCollection($oPoule->getTeams());
 		}
 		return $this->m_oTeams;
 	}
@@ -140,16 +143,15 @@ class Voetbal_Round extends Agenda_TimeSlot implements Voetbal_Round_Interface
 	 */
 	public function getTeamsByPlace()
 	{
-		if ( $this->m_arrTeamsByPlace === null )
-		{
+		if ($this->m_arrTeamsByPlace === null) {
 			$this->m_arrTeamsByPlace = array();
 
 			$oPoules = $this->getPoules();
-			foreach ( $oPoules as $oPoule ) {
-                $this->m_arrTeamsByPlace[ $oPoule->getNumber() ] = array();
+			foreach ($oPoules as $oPoule) {
+				$this->m_arrTeamsByPlace[$oPoule->getNumber()] = array();
 				$oPlaces = $oPoule->getPlaces();
-				foreach ( $oPlaces as $oPlace ) {
-                    $this->m_arrTeamsByPlace[ $oPoule->getNumber() ][ $oPlace->getNumber() ] = $oPlace->getTeam();
+				foreach ($oPlaces as $oPlace) {
+					$this->m_arrTeamsByPlace[$oPoule->getNumber()][$oPlace->getNumber()] = $oPlace->getTeam();
 				}
 			}
 		}
@@ -159,27 +161,24 @@ class Voetbal_Round extends Agenda_TimeSlot implements Voetbal_Round_Interface
 	/**
 	 * @see Voetbal_Round_Interface::getGames()
 	 */
-	public function getGames( $bByDate = false, $oOptions = null )
+	public function getGames($bByDate = false, $oOptions = null)
 	{
 		$oGames = null;
 
-		if ( $bByDate === false )
-		{
+		if ($bByDate === false) {
 			$oGames = Voetbal_Game_Factory::createObjects();
 
 			$oPoules = $this->getPoules();
-			foreach ( $oPoules as $oPoule )
-				$oGames->addCollection( $oPoule->getGames() );
-		}
-		elseif ( $bByDate === true )
-		{
-			if ( $oOptions === null )
+			foreach ($oPoules as $oPoule)
+				$oGames->addCollection($oPoule->getGames());
+		} elseif ($bByDate === true) {
+			if ($oOptions === null)
 				$oOptions = Construction_Factory::createOptions();
 
-			$oOptions->addFilter( "Voetbal_Round::Id", "EqualTo", $this );
-			$oOptions->addOrder( "Voetbal_Game::StartDateTime", false );
-			$oOptions->addOrder( "Voetbal_Game::ViewOrder", false );
-			$oGames = Voetbal_Game_Factory::createObjectsFromDatabase( $oOptions );
+			$oOptions->addFilter("Voetbal_Round::Id", "EqualTo", $this);
+			$oOptions->addOrder("Voetbal_Game::StartDateTime", false);
+			$oOptions->addOrder("Voetbal_Game::ViewOrder", false);
+			$oGames = Voetbal_Game_Factory::createObjectsFromDatabase($oOptions);
 		}
 
 		return $oGames;
@@ -190,8 +189,8 @@ class Voetbal_Round extends Agenda_TimeSlot implements Voetbal_Round_Interface
 	 */
 	public function getCompetitionSeason()
 	{
-		if ( is_int( $this->m_oCompetitionSeason ) )
-			$this->m_oCompetitionSeason = Voetbal_CompetitionSeason_Factory::createObjectFromDatabase( $this->m_oCompetitionSeason );
+		if (is_int($this->m_oCompetitionSeason))
+			$this->m_oCompetitionSeason = Voetbal_CompetitionSeason_Factory::createObjectFromDatabase($this->m_oCompetitionSeason);
 
 		return $this->m_oCompetitionSeason;
 	}
@@ -199,7 +198,7 @@ class Voetbal_Round extends Agenda_TimeSlot implements Voetbal_Round_Interface
 	/**
 	 * @see Voetbal_Round_Interface::putCompetitionSeason()
 	 */
-	public function putCompetitionSeason( $oCompetitionSeason )
+	public function putCompetitionSeason($oCompetitionSeason)
 	{
 		$this->m_oCompetitionSeason = $oCompetitionSeason;
 	}
@@ -215,7 +214,7 @@ class Voetbal_Round extends Agenda_TimeSlot implements Voetbal_Round_Interface
 	/**
 	 * @see Voetbal_Round_Interface::putNumber()
 	 */
-	public function putNumber( $nNumber )
+	public function putNumber($nNumber)
 	{
 		$this->m_nNumber = $nNumber;
 	}
@@ -233,7 +232,7 @@ class Voetbal_Round extends Agenda_TimeSlot implements Voetbal_Round_Interface
 	 */
 	public function isLastRound()
 	{
-		return ( $this->getCompetitionSeason()->getRounds()->count() - 1 === $this->getNumber() );
+		return ($this->getCompetitionSeason()->getRounds()->count() - 1 === $this->getNumber());
 	}
 
 	/**
@@ -247,13 +246,12 @@ class Voetbal_Round extends Agenda_TimeSlot implements Voetbal_Round_Interface
 	/**
 	 * @see Voetbal_Round_Interface::putSemiCompetition()
 	 */
-	public function putSemiCompetition( $bSemiCompetition )
+	public function putSemiCompetition($bSemiCompetition)
 	{
-        $bSemiCompetition = ( (int) $bSemiCompetition ) === 1;
-		if ( $this->m_bObserved === true )
-		{
-			$oObjectChange = MetaData_ObjectChange_Factory::createObjectChange( $this->getId(), "Voetbal_Round::SemiCompetition", $this->m_bSemiCompetition, $bSemiCompetition );
-			$this->notifyObservers( $oObjectChange );
+		$bSemiCompetition = ((int) $bSemiCompetition) === 1;
+		if ($this->m_bObserved === true) {
+			$oObjectChange = MetaData_ObjectChange_Factory::createObjectChange($this->getId(), "Voetbal_Round::SemiCompetition", $this->m_bSemiCompetition, $bSemiCompetition);
+			$this->notifyObservers($oObjectChange);
 		}
 		$this->m_bSemiCompetition = $bSemiCompetition;
 	}
@@ -265,12 +263,11 @@ class Voetbal_Round extends Agenda_TimeSlot implements Voetbal_Round_Interface
 	{
 		$oPoules = $this->getPoules();
 
-		if ( $oPoules->count() === 0 )
+		if ($oPoules->count() === 0)
 			return false;
 
-		foreach ( $oPoules as $oPoule )
-		{
-			if ( $oPoule->getState() !== Voetbal_Factory::STATE_PLAYED )
+		foreach ($oPoules as $oPoule) {
+			if ($oPoule->getState() !== Voetbal_Factory::STATE_PLAYED)
 				return $oPoule->getState();
 		}
 		return Voetbal_Factory::STATE_PLAYED;
@@ -281,25 +278,22 @@ class Voetbal_Round extends Agenda_TimeSlot implements Voetbal_Round_Interface
 	 */
 	public function getType()
 	{
-		if ( $this->getPoulePlaces()->count() < 2 )
+		if ($this->getPoulePlaces()->count() < 2)
 			return Voetbal_Round::TYPE_WINNER;
-		return ( $this->needsRanking() ? Voetbal_Round::TYPE_POULE : Voetbal_Round::TYPE_KNOCKOUT );
+		return ($this->needsRanking() ? Voetbal_Round::TYPE_POULE : Voetbal_Round::TYPE_KNOCKOUT);
 	}
 
 	/**
-	* @see Voetbal_Round_Interface::needsRanking()
-	*/
+	 * @see Voetbal_Round_Interface::needsRanking()
+	 */
 	public function needsRanking()
 	{
-		if ( $this->m_bNeedsRanking === null )
-		{
+		if ($this->m_bNeedsRanking === null) {
 			$this->m_bNeedsRanking = false;
 
 			$oPoules = $this->getPoules();
-			foreach ( $oPoules as $oPoule )
-			{
-				if ( $oPoule->needsRanking() === true )
-				{
+			foreach ($oPoules as $oPoule) {
+				if ($oPoule->needsRanking() === true) {
 					$this->m_bNeedsRanking = true;
 					break;
 				}
@@ -313,10 +307,10 @@ class Voetbal_Round extends Agenda_TimeSlot implements Voetbal_Round_Interface
 	 */
 	public function getFromQualifyRules()
 	{
-		if ( $this->m_oFromQualifyRules == null ) {
+		if ($this->m_oFromQualifyRules == null) {
 			$oOptions = Construction_Factory::createOptions();
-			$oOptions->addFilter( "Voetbal_QualifyRule::ToRound", "EqualTo", $this );
-			$this->m_oFromQualifyRules = Voetbal_QualifyRule_Factory::createObjectsFromDatabase( $oOptions );
+			$oOptions->addFilter("Voetbal_QualifyRule::ToRound", "EqualTo", $this);
+			$this->m_oFromQualifyRules = Voetbal_QualifyRule_Factory::createObjectsFromDatabase($oOptions);
 		}
 		return $this->m_oFromQualifyRules;
 	}
@@ -326,10 +320,10 @@ class Voetbal_Round extends Agenda_TimeSlot implements Voetbal_Round_Interface
 	 */
 	public function getToQualifyRules()
 	{
-		if ( $this->m_oToQualifyRules == null ) {
+		if ($this->m_oToQualifyRules == null) {
 			$oOptions = Construction_Factory::createOptions();
-			$oOptions->addFilter( "Voetbal_QualifyRule::FromRound", "EqualTo", $this );
-			$this->m_oToQualifyRules = Voetbal_QualifyRule_Factory::createObjectsFromDatabase( $oOptions );
+			$oOptions->addFilter("Voetbal_QualifyRule::FromRound", "EqualTo", $this);
+			$this->m_oToQualifyRules = Voetbal_QualifyRule_Factory::createObjectsFromDatabase($oOptions);
 		}
 		return $this->m_oToQualifyRules;
 	}
@@ -339,18 +333,16 @@ class Voetbal_Round extends Agenda_TimeSlot implements Voetbal_Round_Interface
 	 */
 	public function getStartDateTime(): Agenda_DateTime
 	{
-		if ( $this->m_objStartDateTime === null )
-		{
+		if ($this->m_objStartDateTime === null) {
 			$oOptions = Construction_Factory::createOptions();
-			$oOptions->addLimit( 1 );
-			$oGames = $this->getGames( true, $oOptions );
+			$oOptions->addLimit(1);
+			$oGames = $this->getGames(true, $oOptions);
 			$oGame = $oGames->first();
-			if ( $oGame !== null )
+			if ($oGame !== null)
 				$this->m_objStartDateTime = $oGame->getStartDateTime();
-			else if ( $this->isLastRound() )
-			{
-				$oPreviousRound = $this->getCompetitionSeason()->getPreviousRound( $this );
-				if ( $oPreviousRound !== null )
+			else if ($this->isLastRound()) {
+				$oPreviousRound = $this->getCompetitionSeason()->getPreviousRound($this);
+				if ($oPreviousRound !== null)
 					$this->m_objStartDateTime = $oPreviousRound->getEndDateTime();
 			}
 		}
@@ -362,20 +354,18 @@ class Voetbal_Round extends Agenda_TimeSlot implements Voetbal_Round_Interface
 	 */
 	public function getEndDateTime()
 	{
-		if ( $this->m_objEndDateTime === null )
-		{
+		if ($this->m_objEndDateTime === null) {
 			$oOptions = Construction_Factory::createOptions();
-			$oOptions->addLimit( 1 );
-			$oOptions->addFilter( "Voetbal_Round::Id", "EqualTo", $this );
-			$oOptions->addOrder( "Voetbal_Game::StartDateTime", true );
-			$oGame = Voetbal_Game_Factory::createObjectFromDatabase( $oOptions );
+			$oOptions->addLimit(1);
+			$oOptions->addFilter("Voetbal_Round::Id", "EqualTo", $this);
+			$oOptions->addOrder("Voetbal_Game::StartDateTime", true);
+			$oGame = Voetbal_Game_Factory::createObjectFromDatabase($oOptions);
 
-			if ( $oGame !== null )
-				$this->m_objEndDateTime = Agenda_Factory::createDate( $oGame->getStartDateTime() );
-			else if ( $this->isLastRound() )
-			{
-				$oPreviousRound = $this->getCompetitionSeason()->getPreviousRound( $this );
-				if ( $oPreviousRound !== null )
+			if ($oGame !== null)
+				$this->m_objEndDateTime = Agenda_Factory::createDate($oGame->getStartDateTime());
+			else if ($this->isLastRound()) {
+				$oPreviousRound = $this->getCompetitionSeason()->getPreviousRound($this);
+				if ($oPreviousRound !== null)
 					$this->m_objEndDateTime = $oPreviousRound->getEndDateTime();
 			}
 		}

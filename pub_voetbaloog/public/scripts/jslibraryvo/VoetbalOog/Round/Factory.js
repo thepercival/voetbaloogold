@@ -106,12 +106,17 @@ function VoetbalOog_Round_Factory()
 					else if ( nFromWinning == 3 ) { sRoundName = "&frac14; finale"; }
 					else if ( nFromWinning == 2 ) { sRoundName = "&frac12; finale"; }
 					else if ( nFromWinning == 1 ) { sRoundName = "finale"; }
-					else if ( nFromWinning == 0 ) { sRoundName = "winnaar"; }
+					else { sRoundName = "<span class='glyphicon glyphicon-star'></span>"; }
 				}
 				else {
 					sRoundName = ( oRound.getNumber() + 1 ) + '<sup>' + ( oRound.getNumber() == 0 ? 'st' : 'd' ) + "e</sup> ronde";
 				}
 				return sRoundName;
+			}
+			,
+			getShortName: function ( oRound )
+			{
+				return this.getName( oRound ).replace(' finale', '');
 			}
 		};
 	})();

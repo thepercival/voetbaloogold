@@ -11,6 +11,9 @@
 	</div>
 	<div class="col-xs-8" style="text-align: center">
 		<button id="btntogglebetconfig" class="btn btn-info">punteninformatie <span class="glyphicon glyphicon-info-sign"></span></button>
+		<?php if ( $this->bShowEdit === true ): ?>
+		<button type="button" id="betedit-todolabel" class="btn btn-danger" disabled style="margin-left: 8px">0 ingevuld</button>
+		<?php endif; ?>
 	</div>
 	<div class="col-xs-2" style="padding-right: 0px; text-align: right;">
 		<?php if ( $this->bShowRead === true or $this->bShowEdit === true ): ?>

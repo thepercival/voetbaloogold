@@ -311,35 +311,34 @@ function Ctrl_BetView( oPool, oNow ) {
 
     this.navigate = function( jQuery, nBetViewRoundNr )
     {
-        var sContainerId = null; var bCollapse = true;
+        var nRoundNr = null; var sContainerId = null; var bCollapse = false;
         if ( nBetViewRoundNr == null )
         {
-            if ( m_jsonNavigateTo != null )
+            if ( m_jsonNavigateTo != null ) {
+                nRoundNr = m_jsonNavigateTo.roundnr;
                 sContainerId = m_jsonNavigateTo.containerid;
+                bCollapse = true;
+            }
         }
         else
         {
-            if ( m_jsonNavigateTo != null && nBetViewRoundNr == m_jsonNavigateTo.roundnr )
+            if ( m_jsonNavigateTo != null && nBetViewRoundNr == m_jsonNavigateTo.roundnr ) {
+                nRoundNr = m_jsonNavigateTo.roundnr;
                 sContainerId = m_jsonNavigateTo.containerid;
-            else {
-                sContainerId = "betsview-roundnr-" + nBetViewRoundNr;
-                bCollapse = false;
+                bCollapse = true;
+            } else {
+                nRoundNr = nBetViewRoundNr;
             }
         }
-        if ( sContainerId == null)
+        if ( nRoundNr == null )
             return;
 
-        var nTop = 0;
-        if ( bCollapse == true ) {
-            sContainerId = sContainerId.replace("panel", "accordion");
-            nTop -= 40;
-            jQuery("#"+sContainerId).collapse('show');
-        }
-        nTop += jQuery("#"+sContainerId).offset().top;
+        jQuery('#bets-roundnav a[href="#betsview-roundnr-' + nRoundNr + '"]').tab('show');
 
-        jQuery('html, body').animate({
-            scrollTop: nTop
-        }, 1000);
+        if ( bCollapse && sContainerId != null ) {
+            sContainerId = sContainerId.replace("panel", "accordion");
+            jQuery("#" + sContainerId).collapse('show');
+        }
     };
 
 

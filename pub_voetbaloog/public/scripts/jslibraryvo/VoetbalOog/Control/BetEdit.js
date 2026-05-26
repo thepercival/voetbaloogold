@@ -12,6 +12,8 @@ function Ctrl_BetEdit( oPoolUser, tsNow, sDivId ) {
     var m_bPreviousCompetitionSeasonsSet = false;
     var m_vtOldValue = null;
     var m_nNrOfBetsDone = 0;
+    var m_arrBetsDonePerRound = {};
+    var m_arrBetsAvailablePerRound = {};
     var m_bPrintEnabled = true;
     var m_oJQuery = null;
 
@@ -35,24 +37,68 @@ function Ctrl_BetEdit( oPoolUser, tsNow, sDivId ) {
         var oCompetitionSeason = oPool.getCompetitionSeason();
         var oRounds = oCompetitionSeason.getRounds();
 
+        var arrEligibleRounds = [];
         for (var nI in oRounds) {
             if (!( oRounds.hasOwnProperty(nI) ))
                 continue;
-
             var oRound = oRounds[nI];
-
             var oPoolEndDateTime = oPool.getRoundEndDateTime(oRound);
             if ( oPoolEndDateTime == null || m_oNow > oPoolEndDateTime )
                 continue;
-
-            showRound(oDiv, oRound);
+            arrEligibleRounds.push(oRound);
         }
 
-        if ( Object_Factory().count( oRounds ) > 0 ) {
-            appendHeader(oDiv, true, oPool);
-            appendHeader(oDiv, false, oPool);
-            updateBetsDoneTotals();
+        if (arrEligibleRounds.length == 0) return;
+
+        // Horizontal round navigation
+        var oNav = oDiv.appendChild(document.createElement("ul"));
+        oNav.id = "betedit-roundnav";
+        oNav.className = "nav nav-tabs";
+        oNav.style.display = "flex";
+        oNav.style.flexWrap = "nowrap";
+        oNav.style.marginBottom = "10px";
+
+        var oTabContent = oDiv.appendChild(document.createElement("div"));
+        oTabContent.className = "tab-content";
+
+        if (arrEligibleRounds.length > 0) {
+            var oFirstRound = arrEligibleRounds[0];
+            var oFirstRoundBetConfigs = m_oPoolUser.getPool().getBetConfigs(oFirstRound);
+            addBetInfo(oFirstRound, oFirstRoundBetConfigs, oTabContent);
         }
+
+        for (var nJ = 0; nJ < arrEligibleRounds.length; nJ++) {
+            var oRound = arrEligibleRounds[nJ];
+            var bFirst = (nJ === 0);
+            var sRoundId = "betedit-roundnr-" + oRound.getNumber();
+
+            var oLi = oNav.appendChild(document.createElement("li"));
+            oLi.style.flex = "1";
+            oLi.style.textAlign = "center";
+            oLi.className = bFirst ? "active" : "disabled";
+
+            var oLink = oLi.appendChild(document.createElement("a"));
+            oLink.href = "#" + sRoundId;
+            oLink.setAttribute("data-toggle", "tab");
+            oLink.innerHTML = VoetbalOog_Round_Factory().getShortName(oRound);
+            oLink.addEventListener("click", function(e) {
+                if (this.parentElement.classList.contains("disabled")) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                }
+            });
+
+            var oPane = oTabContent.appendChild(document.createElement("div"));
+            oPane.id = sRoundId;
+            oPane.className = "tab-pane" + (bFirst ? " active" : "");
+            oPane.setAttribute("role", "tabpanel");
+
+            showRound(oPane, oRound);
+            if (oRound.getNumber() !== 0)
+                appendTabSaveButton(oPane);
+        }
+
+        updateBetsDoneTotals();
     };
 
     function appendHeader(oContainer, bTop, oPool) {
@@ -103,16 +149,6 @@ function Ctrl_BetEdit( oPoolUser, tsNow, sDivId ) {
     }
 
     function showRound(oContainer, oRound) {
-
-        // add header
-        {
-            var oRoundHeader = oContainer.appendChild(document.createElement("h5"));
-            var span = document.createElement('span');
-            span.innerHTML = VoetbalOog_Round_Factory().getName(oRound);
-            oRoundHeader.appendChild(span);
-            oRoundHeader.style.textAlign = "center";
-            oRoundHeader.style.fontWeight = "bold";
-        }
 
         var oRoundBetConfigs = m_oPoolUser.getPool().getBetConfigs(oRound);
 
@@ -183,6 +219,18 @@ function Ctrl_BetEdit( oPoolUser, tsNow, sDivId ) {
 
                 showPoule(oContainer, oPoule, oRoundBetConfigs);
 
+                if (oRound.getNumber() == 0) {
+                    var oSaveDiv = oContainer.appendChild(document.createElement("div"));
+                    oSaveDiv.style.textAlign = "center";
+                    oSaveDiv.style.margin = "5px 0 30px 0";
+                    var oSaveButton = oSaveDiv.appendChild(document.createElement("input"));
+                    oSaveButton.type = "submit";
+                    oSaveButton.className = "btn btn-default";
+                    oSaveButton.style.fontWeight = "bold";
+                    oSaveButton.name = "btnsavebets";
+                    oSaveButton.value = "opslaan";
+                }
+
                 oTable = null;
             }
             else {
@@ -205,10 +253,6 @@ function Ctrl_BetEdit( oPoolUser, tsNow, sDivId ) {
             }
         }
 
-        if ( oRoundBetConfigs[VoetbalOog_Bet_Score.nId] != null
-            ||  oRoundBetConfigs[VoetbalOog_Bet_Result.nId] != null
-        )
-            addBetInfo( oRound, oRoundBetConfigs, oContainer );
     }
 
     function showPoule(oContainer, oPoule, oRoundBetConfigs) {
@@ -257,7 +301,6 @@ function Ctrl_BetEdit( oPoolUser, tsNow, sDivId ) {
         if (oRoundBetConfig == undefined)
             oRoundBetConfig = oRoundBetConfigs[VoetbalOog_Bet_Result.nId];
 
-        // show only for roundnumber 0
         if (m_oBetHelper != null && oRoundBetConfig != undefined && oRoundBetConfig.getRound().getNumber() == 0 ) {
 
             var oInfoDiv = document.createElement('div');
@@ -895,27 +938,96 @@ function Ctrl_BetEdit( oPoolUser, tsNow, sDivId ) {
             oDiv.className = "";
         }
 
+        var nRoundNr = getRoundNrFromDiv(oDiv);
+        if (nRoundNr !== null) {
+            if (!(nRoundNr in m_arrBetsAvailablePerRound)) m_arrBetsAvailablePerRound[nRoundNr] = 0;
+            if (!(nRoundNr in m_arrBetsDonePerRound))     m_arrBetsDonePerRound[nRoundNr]     = 0;
+            if (!bUpdateTotals) {
+                m_arrBetsAvailablePerRound[nRoundNr]++;
+                if (nDelta === 1) m_arrBetsDonePerRound[nRoundNr]++;
+            } else if (nDelta !== 0 && nDelta !== null) {
+                m_arrBetsDonePerRound[nRoundNr] += nDelta;
+            }
+        }
+
         if ( bUpdateTotals == true )
             updateBetsDoneTotals();
     }
 
     function updateBetsDoneTotals()
     {
-        function updateBetsDoneTotalsHelper( sId )
-        {
-            var oDivToDoBets = document.getElementById( sId );
-            if ( oDivToDoBets != undefined )
-            {
-                var nAvailableBets = m_oPoolUser.getPool().getNrOfAvailableBets();
-                oDivToDoBets.value = m_nNrOfBetsDone + "/" + nAvailableBets;
-                if ( m_nNrOfBetsDone == nAvailableBets )
-                    oDivToDoBets.className = 'btn btn-success';
-                else
-                    oDivToDoBets.className = 'btn btn-danger';
+        var nAvailableBets = m_oPoolUser.getPool().getNrOfAvailableBets();
+        var oTodoLabel = document.getElementById( 'betedit-todolabel' );
+        if ( oTodoLabel != null ) {
+            oTodoLabel.innerHTML = m_nNrOfBetsDone + "/" + nAvailableBets + " ingevuld";
+            oTodoLabel.className = ( m_nNrOfBetsDone == nAvailableBets ) ? 'btn btn-success' : 'btn btn-danger';
+            oTodoLabel.style.marginLeft = '8px';
+        }
+        updateTabStates();
+    }
+
+    function appendTabSaveButton( oPane )
+    {
+        var oSaveDiv = oPane.appendChild(document.createElement("div"));
+        oSaveDiv.style.textAlign = "center";
+        oSaveDiv.style.margin = "10px 0";
+        var oSaveButton = oSaveDiv.appendChild(document.createElement("input"));
+        oSaveButton.type = "submit";
+        oSaveButton.className = "btn btn-default";
+        oSaveButton.style.fontWeight = "bold";
+        oSaveButton.name = "btnsavebets";
+        oSaveButton.value = "opslaan";
+    }
+
+    function getRoundNrFromDiv( oDiv )
+    {
+        var el = oDiv;
+        while (el) {
+            if (el.id && el.id.indexOf("betedit-roundnr-") === 0)
+                return parseInt(el.id.replace("betedit-roundnr-", ""), 10);
+            el = el.parentElement;
+        }
+        return null;
+    }
+
+    function updateTabStates()
+    {
+        var oNav = document.getElementById("betedit-roundnav");
+        if (!oNav) return;
+        var oItems = oNav.children;
+        for (var i = 0; i < oItems.length; i++) {
+            var oLi = oItems[i];
+            var oLink = oLi.firstElementChild;
+            var nRoundNr = parseInt(oLink.getAttribute("href").replace("#betedit-roundnr-", ""), 10);
+            var nDone  = m_arrBetsDonePerRound[nRoundNr]  || 0;
+            var nAvail = m_arrBetsAvailablePerRound[nRoundNr] || 0;
+
+            // disabled state based on previous round completion
+            if (i === 0) {
+                oLi.classList.remove("disabled");
+            } else {
+                var oPrevLink = oItems[i - 1].firstElementChild;
+                var nPrevRoundNr = parseInt(oPrevLink.getAttribute("href").replace("#betedit-roundnr-", ""), 10);
+                var nPrevDone  = m_arrBetsDonePerRound[nPrevRoundNr]  || 0;
+                var nPrevAvail = m_arrBetsAvailablePerRound[nPrevRoundNr] || 0;
+                if (nPrevAvail > 0 && nPrevDone >= nPrevAvail) {
+                    oLi.classList.remove("disabled");
+                } else {
+                    oLi.classList.add("disabled");
+                }
+            }
+
+            // background color based on completion percentage
+            if (nAvail > 0) {
+                if (nDone >= nAvail) {
+                    oLink.style.backgroundColor = "#dff0d8"; // success
+                } else if (nDone > 0) {
+                    oLink.style.backgroundColor = "#fcf8e3"; // warning
+                } else {
+                    oLink.style.backgroundColor = "#f2dede"; // danger
+                }
             }
         }
-        updateBetsDoneTotalsHelper( 'todobetstop' );
-        updateBetsDoneTotalsHelper( 'todobetsbottom' );
     }
 
     function getClonedGames( oPoule, oRoundBetConfig )
