@@ -109,7 +109,7 @@ function VoetbalOog_Round_Factory()
 					else { sRoundName = "<span class='glyphicon glyphicon-star'></span>"; }
 				}
 				else {
-					sRoundName = ( oRound.getNumber() + 1 ) + '<sup>' + ( oRound.getNumber() == 0 ? 'st' : 'd' ) + "e</sup> ronde";
+					sRoundName = ( oRound.getNumber() == 0 ) ? "Poule" : ( oRound.getNumber() + 1 ) + '<sup>d</sup> ronde';
 				}
 				return sRoundName;
 			}

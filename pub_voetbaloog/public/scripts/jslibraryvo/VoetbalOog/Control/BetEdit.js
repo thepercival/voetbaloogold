@@ -45,10 +45,28 @@ function Ctrl_BetEdit( oPoolUser, tsNow, sDivId ) {
             var oPoolEndDateTime = oPool.getRoundEndDateTime(oRound);
             if ( oPoolEndDateTime == null || m_oNow > oPoolEndDateTime )
                 continue;
+            // Skip rounds with no games (e.g. the ★ winner round — its bet is saved automatically).
+            var oRoundPoules = oRound.getPoules();
+            var bRoundHasGames = false;
+            for ( var nP in oRoundPoules ) {
+                if ( !oRoundPoules.hasOwnProperty(nP) ) continue;
+                if ( Object_Factory().count( oRoundPoules[nP].getPlaces() ) > 1 ) { bRoundHasGames = true; break; }
+            }
+            if ( !bRoundHasGames ) continue;
             arrEligibleRounds.push(oRound);
         }
 
         if (arrEligibleRounds.length == 0) return;
+
+        // Pre-fill qualifier bets from previous-round score predictions before rendering,
+        // so team names are available when drawing knockout-round home/away cells.
+        for (var nK = 0; nK < arrEligibleRounds.length; nK++) {
+            var oFillRound = arrEligibleRounds[nK];
+            if (oFillRound.getNumber() === 0) continue;
+            var oFillBetConfigs = m_oPoolUser.getPool().getBetConfigs(oFillRound);
+            if (oFillBetConfigs[VoetbalOog_Bet_Qualify.nId] != undefined)
+                fillQualifierBetsData(oFillRound.getId());
+        }
 
         // Horizontal round navigation
         var oNav = oDiv.appendChild(document.createElement("ul"));
@@ -60,12 +78,6 @@ function Ctrl_BetEdit( oPoolUser, tsNow, sDivId ) {
 
         var oTabContent = oDiv.appendChild(document.createElement("div"));
         oTabContent.className = "tab-content";
-
-        if (arrEligibleRounds.length > 0) {
-            var oFirstRound = arrEligibleRounds[0];
-            var oFirstRoundBetConfigs = m_oPoolUser.getPool().getBetConfigs(oFirstRound);
-            addBetInfo(oFirstRound, oFirstRoundBetConfigs, oTabContent);
-        }
 
         for (var nJ = 0; nJ < arrEligibleRounds.length; nJ++) {
             var oRound = arrEligibleRounds[nJ];
@@ -93,13 +105,73 @@ function Ctrl_BetEdit( oPoolUser, tsNow, sDivId ) {
             oPane.className = "tab-pane" + (bFirst ? " active" : "");
             oPane.setAttribute("role", "tabpanel");
 
+            if (bFirst) {
+                var oFirstRoundBetConfigs = m_oPoolUser.getPool().getBetConfigs(oRound);
+                addBetInfo(oRound, oFirstRoundBetConfigs, oPane);
+            }
             showRound(oPane, oRound);
             if (oRound.getNumber() !== 0)
                 appendTabSaveButton(oPane);
         }
 
         updateBetsDoneTotals();
+
+        // Default active-tab determination on page load:
+        // 1) first incomplete round (some bets filled, not all)
+        // 2) otherwise first empty round
+        // 3) otherwise the last complete round
+        var sDefaultTabId = getDefaultActiveTabId( arrEligibleRounds );
+        if ( sDefaultTabId != null ) {
+            var oDefaultLink = document.querySelector( 'a[href="#' + sDefaultTabId + '"]' );
+            if ( oDefaultLink != null )
+                oDefaultLink.parentElement.classList.remove( "disabled" );
+            if ( oDefaultLink != null && window.jQuery && window.jQuery.fn.tab )
+                window.jQuery( oDefaultLink ).tab( 'show' );
+        }
+
+        // Restore saved tab after form submit + reload
+        (function() {
+            try {
+                var sSavedTab = sessionStorage.getItem('betedit_active_tab');
+                if (!sSavedTab) return;
+                sessionStorage.removeItem('betedit_active_tab');
+                var oTargetLink = document.querySelector('a[href="#' + sSavedTab + '"]');
+                if (!oTargetLink) return;
+                oTargetLink.parentElement.classList.remove('disabled');
+                if (window.jQuery && window.jQuery.fn.tab)
+                    window.jQuery(oTargetLink).tab('show');
+            } catch(e) {}
+        })();
     };
+
+    function getDefaultActiveTabId( arrEligibleRounds )
+    {
+        var sFirstIncompleteTabId = null;
+        var sFirstEmptyTabId = null;
+        var sLastCompleteTabId = null;
+
+        for ( var nI = 0; nI < arrEligibleRounds.length; nI++ )
+        {
+            var oRound = arrEligibleRounds[nI];
+            var nRoundNr = oRound.getNumber();
+            var nDone = m_arrBetsDonePerRound[nRoundNr] || 0;
+            var nAvail = m_arrBetsAvailablePerRound[nRoundNr] || 0;
+            var sRoundTabId = "betedit-roundnr-" + nRoundNr;
+
+            if ( nAvail > 0 && nDone > 0 && nDone < nAvail && sFirstIncompleteTabId == null )
+                sFirstIncompleteTabId = sRoundTabId;
+            else if ( nDone == 0 && sFirstEmptyTabId == null )
+                sFirstEmptyTabId = sRoundTabId;
+            else if ( nAvail > 0 && nDone >= nAvail )
+                sLastCompleteTabId = sRoundTabId;
+        }
+
+        if ( sFirstIncompleteTabId != null )
+            return sFirstIncompleteTabId;
+        if ( sFirstEmptyTabId != null )
+            return sFirstEmptyTabId;
+        return sLastCompleteTabId;
+    }
 
     function appendHeader(oContainer, bTop, oPool) {
         var oRow = document.createElement("div");
@@ -121,7 +193,7 @@ function Ctrl_BetEdit( oPoolUser, tsNow, sDivId ) {
                 oSaveButton.id = 'btnsavebets';
                 oSaveButton.name = 'btnsavebets';
                 oSaveButton.value = "alles opslaan";
-                oSaveButton.className = 'btn btn-default';
+                oSaveButton.className = 'btn btn-primary';
                 oSaveButton.role = "button";
             }
 
@@ -152,32 +224,24 @@ function Ctrl_BetEdit( oPoolUser, tsNow, sDivId ) {
 
         var oRoundBetConfigs = m_oPoolUser.getPool().getBetConfigs(oRound);
 
-        // if round is not readonly and previous has ranking and this one has qualify
-        if (oRoundBetConfigs[VoetbalOog_Bet_Qualify.nId] != undefined && m_oNow <= oRoundBetConfigs[VoetbalOog_Bet_Qualify.nId].getDeadLine( null ) ) {
-            var oPreviousRound = oRound.getPrevious();
-            if (oPreviousRound != undefined && oPreviousRound.poulesNeedRanking() == true) {
-                var oAutoInputDiv = oContainer.appendChild(document.createElement('div'));
-                oAutoInputDiv.style.textAlign = 'center';
-                oAutoInputDiv.style.marginBottom = '3px';
-
-                var oAutoInputLink = oAutoInputDiv.appendChild(document.createElement('a'));
-                oAutoInputLink.setAttribute('href', '#');
-                oAutoInputLink.className = "btn btn-xs btn-default";
-                oAutoInputLink.role = "button";
-                oAutoInputLink.onclick = function () {
-                    autoInputQualifiers(oRound.getId());
-                    return false;
-                };
-                oAutoInputLink.appendChild(document.createTextNode('vul automatisch de gekwalificeerden in'));
-                oAutoInputLink.appendChild(document.createElement('br'));
-                oAutoInputLink.appendChild(document.createTextNode('o.b.v. de poulestanden van de vorige ronde'));
-            }
-        }
-
         var oPoules = oRound.getPoules();
         var oTable = null;
-        for (var nJ in oPoules) {
-            var oPoule = oPoules[nJ];
+        var arrPoules;
+        if ( oRoundBetConfigs[ VoetbalOog_Bet_Qualify.nId ] != undefined )
+        {
+            arrPoules = getOrderedKnockoutPoules( oRound );
+        }
+        else
+        {
+            arrPoules = [];
+            for ( var nK in oPoules )
+            {
+                if ( oPoules.hasOwnProperty( nK ) ) arrPoules.push( oPoules[nK] );
+            }
+        }
+        for ( var nJ = 0; nJ < arrPoules.length; nJ++ )
+        {
+            var oPoule = arrPoules[nJ];
 
             // per round set
             var nNrOfPoulePlaces = Object_Factory().count(oPoule.getPlaces());
@@ -225,10 +289,10 @@ function Ctrl_BetEdit( oPoolUser, tsNow, sDivId ) {
                     oSaveDiv.style.margin = "5px 0 30px 0";
                     var oSaveButton = oSaveDiv.appendChild(document.createElement("input"));
                     oSaveButton.type = "submit";
-                    oSaveButton.className = "btn btn-default";
-                    oSaveButton.style.fontWeight = "bold";
+                    oSaveButton.className = "btn btn-primary";
                     oSaveButton.name = "btnsavebets";
                     oSaveButton.value = "opslaan";
+                    oSaveButton.onclick = function() { storePostSaveTab( oContainer.id ); };
                 }
 
                 oTable = null;
@@ -242,7 +306,7 @@ function Ctrl_BetEdit( oPoolUser, tsNow, sDivId ) {
                     oTable.className = m_sTableClassName;
 
                     if (bShowGames == true)
-                        showPouleGamesHeaders(oTable, oPoule);
+                        showPouleGamesHeaders(oTable, oPoule, oRoundBetConfigs[VoetbalOog_Bet_Qualify.nId] != undefined);
                 }
                 if (bShowGames == true)
                     showPouleGames(oTable, oPoule, oRoundBetConfigs);
@@ -270,7 +334,7 @@ function Ctrl_BetEdit( oPoolUser, tsNow, sDivId ) {
             oTable.className = m_sTableClassName;
             oGamesDiv.appendChild(oTable);
 
-            showPouleGamesHeaders(oTable, oPoule);
+            showPouleGamesHeaders(oTable, oPoule, oRoundBetConfigs[VoetbalOog_Bet_Qualify.nId] != undefined);
             showPouleGames(oTable, oPoule, oRoundBetConfigs);
         }
 
@@ -301,7 +365,7 @@ function Ctrl_BetEdit( oPoolUser, tsNow, sDivId ) {
         if (oRoundBetConfig == undefined)
             oRoundBetConfig = oRoundBetConfigs[VoetbalOog_Bet_Result.nId];
 
-        if (m_oBetHelper != null && oRoundBetConfig != undefined && oRoundBetConfig.getRound().getNumber() == 0 ) {
+        if (m_oBetHelper != null && oRoundBetConfig != undefined) {
 
             var oInfoDiv = document.createElement('div');
             oInfoDiv.className = 'col-xs-12';
@@ -395,7 +459,7 @@ function Ctrl_BetEdit( oPoolUser, tsNow, sDivId ) {
         return sId.substr( 0, nEndPos );
     }
 
-    function showPouleGamesHeaders( oTable, oPoule )
+    function showPouleGamesHeaders( oTable, oPoule, bKnockout )
     {
         var oRowHeader = oTable.insertRow( oTable.rows.length );
         oRowHeader.className = "tableheader";
@@ -404,6 +468,12 @@ function Ctrl_BetEdit( oPoolUser, tsNow, sDivId ) {
         for ( var nI = 0 ; nI < arrColumns.length ; nI++ )
         {
             var sHeader = arrColumns[nI];
+
+            if ( bKnockout && sHeader == "uitslag" )
+            {
+                oRowHeader.appendChild( document.createElement("th") );
+                continue;
+            }
 
             var oCell = oRowHeader.appendChild( document.createElement("th") );
             if ( sHeader == "uitslag" )
@@ -420,6 +490,340 @@ function Ctrl_BetEdit( oPoolUser, tsNow, sDivId ) {
             var oCell = oRowHeader.appendChild( document.createElement("th") );
             oCell.style.textAlign = 'center';
             oCell.innerHTML = m_jsonColumnGameId.header;
+
+            if ( bKnockout )
+            {
+                var oVsCell = oRowHeader.appendChild( document.createElement("th") );
+                oVsCell.style.textAlign = 'center';
+                oVsCell.innerHTML = 'vs';
+            }
+        }
+    }
+
+    // Returns the poules of oRound sorted in bracket order (depth-first from the final).
+    // Adjacent pairs are games whose winners meet in the same next-round game.
+    // The home-slot contributor appears before the away-slot contributor within each pair.
+    function getOrderedKnockoutPoules( oRound )
+    {
+        var oAllPoules = oRound.getPoules();
+
+        // Build id-keyed lookup and count.
+        var oPouleById = {};
+        var nPouleCount = 0;
+        for ( var nK in oAllPoules )
+        {
+            if ( !( oAllPoules.hasOwnProperty(nK) ) ) continue;
+            oPouleById[ oAllPoules[nK].getId() ] = oAllPoules[nK];
+            nPouleCount++;
+        }
+
+        // Base case: single poule — already in order.
+        if ( nPouleCount <= 1 )
+        {
+            var arrSingle = [];
+            for ( var nS in oPouleById )
+            {
+                if ( oPouleById.hasOwnProperty(nS) ) arrSingle.push( oPouleById[nS] );
+            }
+            return arrSingle;
+        }
+
+        var oToQualifyRules = oRound.getToQualifyRules();
+
+        // Map each current-round poule ID → destination info.
+        var oFromPouleToDestInfo = {}; // fromPouleId -> { destPouleId, destPlaceId }
+        var oNextPouleMap = {};        // nextPouleId -> nextPoule object
+        for ( var nR in oToQualifyRules )
+        {
+            if ( !( oToQualifyRules.hasOwnProperty(nR) ) ) continue;
+            var oRule = oToQualifyRules[nR];
+            var arrDest = oRule.getToPoulePlaces();
+            if ( arrDest.length == 0 ) continue;
+            var oDestPlace = arrDest[0];
+            var oDestPoule = oDestPlace.getPoule();
+            oNextPouleMap[ oDestPoule.getId() ] = oDestPoule;
+
+            var oFromPoules = oRule.getFromPoules();
+            for ( var nP in oFromPoules )
+            {
+                if ( !( oFromPoules.hasOwnProperty(nP) ) ) continue;
+                oFromPouleToDestInfo[nP] = {
+                    destPouleId: oDestPoule.getId(),
+                    destPlaceId: Number( oDestPlace.getId() )
+                };
+            }
+        }
+
+        // Determine the next round from any destination poule.
+        var oNextRound = null;
+        for ( var nQ in oNextPouleMap )
+        {
+            if ( oNextPouleMap.hasOwnProperty(nQ) ) { oNextRound = oNextPouleMap[nQ].getRound(); break; }
+        }
+        if ( oNextRound == null )
+        {
+            var arrFallback = [];
+            for ( var nF in oPouleById )
+            {
+                if ( oPouleById.hasOwnProperty(nF) ) arrFallback.push( oPouleById[nF] );
+            }
+            return arrFallback;
+        }
+
+        // Recursively get the ordered next-round poules.
+        var arrNextOrdered = getOrderedKnockoutPoules( oNextRound );
+
+        // Group current-round poules by their destination next-round poule, sort by slot.
+        var oGroups = {}; // nextPouleId -> [{fromPouleId, destPlaceId}]
+        for ( var nPId in oFromPouleToDestInfo )
+        {
+            if ( !( oFromPouleToDestInfo.hasOwnProperty(nPId) ) ) continue;
+            var info = oFromPouleToDestInfo[nPId];
+            if ( !oGroups[ info.destPouleId ] ) oGroups[ info.destPouleId ] = [];
+            oGroups[ info.destPouleId ].push( { fromPouleId: nPId, destPlaceId: info.destPlaceId } );
+        }
+        for ( var nG in oGroups )
+        {
+            if ( oGroups.hasOwnProperty(nG) )
+                oGroups[nG].sort( function(a, b) { return a.destPlaceId - b.destPlaceId; } );
+        }
+
+        // Build result in next-round bracket order.
+        var arrResult = [];
+        var oIncluded = {};
+        for ( var nI = 0; nI < arrNextOrdered.length; nI++ )
+        {
+            var arrGroup = oGroups[ arrNextOrdered[nI].getId() ];
+            if ( arrGroup )
+            {
+                for ( var nE = 0; nE < arrGroup.length; nE++ )
+                {
+                    var oFromPoule = oPouleById[ arrGroup[nE].fromPouleId ];
+                    if ( oFromPoule ) { arrResult.push( oFromPoule ); oIncluded[ arrGroup[nE].fromPouleId ] = true; }
+                }
+            }
+        }
+        // Append any poules not covered (safety fallback for malformed data).
+        for ( var nU in oPouleById )
+        {
+            if ( oPouleById.hasOwnProperty(nU) && !oIncluded[nU] ) arrResult.push( oPouleById[nU] );
+        }
+        return arrResult;
+    }
+
+    // Returns the name of the opponent poule (next-round game) for a given knockout poule.
+    // E.g. if poule M's winner faces poule O's winner, returns 'O' when called with poule M.
+    function getOpponentPouleName( oPoule )
+    {
+        var oToQualifyRules = oPoule.getRound().getToQualifyRules();
+
+        // Find which next-round poule this poule's winner advances to.
+        var oDestPoule = null;
+        for ( var nR in oToQualifyRules )
+        {
+            if ( !( oToQualifyRules.hasOwnProperty(nR) ) ) continue;
+            var oRule = oToQualifyRules[nR];
+            var oFromPoules = oRule.getFromPoules();
+            if ( oFromPoules[ oPoule.getId() ] == null ) continue;
+            var arrDest = oRule.getToPoulePlaces();
+            if ( arrDest.length > 0 )
+                oDestPoule = arrDest[0].getPoule();
+            break;
+        }
+
+        if ( oDestPoule == null ) return '';
+
+        // Find the OTHER current-round poule whose winner also advances to the same next-round poule.
+        for ( var nR2 in oToQualifyRules )
+        {
+            if ( !( oToQualifyRules.hasOwnProperty(nR2) ) ) continue;
+            var oRule2 = oToQualifyRules[nR2];
+            var oFromPoules2 = oRule2.getFromPoules();
+            if ( oFromPoules2[ oPoule.getId() ] != null ) continue; // skip this poule's own rule
+            var arrDest2 = oRule2.getToPoulePlaces();
+            if ( arrDest2.length > 0 && arrDest2[0].getPoule().getId() == oDestPoule.getId() )
+            {
+                for ( var nP in oFromPoules2 )
+                {
+                    if ( !( oFromPoules2.hasOwnProperty(nP) ) ) continue;
+                    return VoetbalOog_Poule_Factory().getName( oFromPoules2[nP], false );
+                }
+            }
+        }
+        return '';
+    }
+
+    // Renders the home, score, and away cells for a knockout-round game row.
+    // Home/away cells: btn-style label (icon + team name) with embedded radio.
+    // Score cell: always " - "; red background = no bet, green = bet made.
+    // The radio name = qualify bet control ID for the destination slot in the next round.
+    function renderKnockoutGameCells( oRow, oGame, oRoundBetConfigs )
+    {
+        var oQualifyBetConfig = oRoundBetConfigs[ VoetbalOog_Bet_Qualify.nId ];
+        var oDeadLine = oQualifyBetConfig.getDeadLine( null );
+
+        var oBets = m_oPoolUser.getBets( oQualifyBetConfig );
+        var oHomePoulePlace = oGame.getHomePoulePlace();
+        var oAwayPoulePlace = oGame.getAwayPoulePlace();
+        var oHomeBet = oBets[ oHomePoulePlace.getId() ];
+        var oHomeTeam = ( oHomeBet != null ) ? oHomeBet.getTeam() : null;
+        var oAwayBet = oBets[ oAwayPoulePlace.getId() ];
+        var oAwayTeam = ( oAwayBet != null ) ? oAwayBet.getTeam() : null;
+
+        // Find the next-round destination slot for the winner of this game.
+        var oToQualifyRules = oHomePoulePlace.getPoule().getRound().getToQualifyRules();
+        var oDestPoulePlace = null;
+        var oNextRoundBetConfig = null;
+        for ( var nR in oToQualifyRules )
+        {
+            if ( !( oToQualifyRules.hasOwnProperty(nR) ) ) continue;
+            var oRule = oToQualifyRules[nR];
+            var oFromPoules = oRule.getFromPoules();
+            if ( oFromPoules[ oHomePoulePlace.getPoule().getId() ] == null ) continue;
+            var arrDest = oRule.getToPoulePlaces();
+            if ( arrDest.length > 0 )
+            {
+                oDestPoulePlace = arrDest[0];
+                var oNextRoundBetConfigs = m_oPoolUser.getPool().getBetConfigs( oRule.getToRound() );
+                oNextRoundBetConfig = oNextRoundBetConfigs[ VoetbalOog_Bet_Qualify.nId ];
+            }
+            break;
+        }
+
+        // Currently betted winner (qualify bet for next-round destination slot).
+        var oWinnerTeam = null;
+        var sControlId = null;
+        if ( oDestPoulePlace != null && oNextRoundBetConfig != null )
+        {
+            sControlId = getControlId( oNextRoundBetConfig, oDestPoulePlace, null );
+            var oNextBets = m_oPoolUser.getBets( oNextRoundBetConfig );
+            var oNextBet = oNextBets[ oDestPoulePlace.getId() ];
+            oWinnerTeam = ( oNextBet != null ) ? oNextBet.getTeam() : null;
+        }
+
+        var bDeadlineActive = ( m_oNow <= oDeadLine );
+        var bCanShowRadio = ( bDeadlineActive && sControlId != null && oHomeTeam != null && oAwayTeam != null );
+
+        // Only count current-round qualify bets for the first knockout round.
+        // For later rounds, these bets are already counted as winner picks in the previous tab.
+        var bCountCurrentQualify = false;
+        {
+            var oPrevRound = oQualifyBetConfig.getRound().getPrevious();
+            if ( oPrevRound != null ) {
+                var oPrevRoundConfigs = m_oPoolUser.getPool().getBetConfigs( oPrevRound );
+                bCountCurrentQualify = ( oPrevRoundConfigs[ VoetbalOog_Bet_Qualify.nId ] == undefined );
+            }
+        }
+
+        // Label references captured by radio onchange closures (var-hoisted; assigned below).
+        var oHomeLabel = null;
+        var oAwayLabel = null;
+        var oScoreCell;
+
+        // Helper: append team button (or static name) to a cell.
+        function appendTeamCell( oCell, oTeam, oPoulePlace, bIsHome )
+        {
+            var sHiddenId = getControlId( oQualifyBetConfig, oPoulePlace, null );
+            if ( bCanShowRadio )
+            {
+                var oLabel = document.createElement("label");
+                oLabel.className = "btn btn-sm btn-default";
+                oLabel.style.fontWeight = "normal";
+
+                var oRadio = document.createElement("input");
+                oRadio.type = "radio";
+                oRadio.name = sControlId;
+                oRadio.value = oTeam.getId();
+
+                if ( oWinnerTeam != null && oWinnerTeam.getId() == oTeam.getId() )
+                {
+                    oLabel.className += " active";
+                    oRadio.checked = true;
+                }
+
+                oRadio.onfocus = function() {
+                    var oChk = document.querySelector( 'input[type="radio"][name="' + this.name + '"]:checked' );
+                    m_vtOldValue = oChk ? parseInt( oChk.value, 10 ) : -1;
+                };
+                oRadio.onchange = function() {
+                    updateBetQualifyFromRadio( this );
+                    m_vtOldValue = parseInt( this.value, 10 );
+                    if ( oHomeLabel ) oHomeLabel.className = oHomeLabel.className.replace( " active", "" );
+                    if ( oAwayLabel ) oAwayLabel.className = oAwayLabel.className.replace( " active", "" );
+                    oLabel.className += " active";
+                    oScoreCell.style.backgroundColor = '#dff0d8';
+                };
+
+                if ( bIsHome )
+                {
+                    VoetbalOog_Control_Factory().appendTeam( oLabel, oTeam, true, false, false, false );
+                    oRadio.style.marginLeft = '6px';
+                    oLabel.appendChild( oRadio );
+                }
+                else
+                {
+                    oRadio.style.marginRight = '6px';
+                    oLabel.appendChild( oRadio );
+                    VoetbalOog_Control_Factory().appendTeam( oLabel, oTeam, false, false, false, false );
+                }
+
+                if ( bIsHome ) oHomeLabel = oLabel;
+                else oAwayLabel = oLabel;
+
+                oCell.appendChild( oLabel );
+
+                // Hidden input to submit the current-round qualifier bet with the form.
+                var oHidden = document.createElement("input");
+                oHidden.type = "hidden";
+                oHidden.name = sHiddenId;
+                oHidden.value = oTeam.getId();
+                oCell.appendChild( oHidden );
+
+                // Count this current-round qualify bet as done for the first knockout round.
+                // (For later rounds these bets are already counted as winner picks in the previous tab.)
+                if ( bCountCurrentQualify )
+                    updateBetsToDo( 1, oCell, false );
+            }
+            else
+            {
+                // Deadline passed or teams unknown: static display.
+                if ( oTeam != null )
+                    VoetbalOog_Control_Factory().appendTeam( oCell, oTeam, false, false, false, false );
+                else
+                    VoetbalOog_Control_Factory().appendPoulePlace( oCell, oPoulePlace, false, false );
+
+                if ( oTeam != null )
+                {
+                    var oHidden2 = document.createElement("input");
+                    oHidden2.type = "hidden";
+                    oHidden2.name = sHiddenId;
+                    oHidden2.value = oTeam.getId();
+                    oCell.appendChild( oHidden2 );
+                }
+            }
+        }
+
+        // Home cell
+        var oHomeCell = oRow.insertCell( oRow.cells.length );
+        oHomeCell.align = "right";
+        appendTeamCell( oHomeCell, oHomeTeam, oHomePoulePlace, true );
+
+        // Score cell — always " - "; background: red = no bet, green = bet made.
+        oScoreCell = oRow.insertCell( oRow.cells.length );
+        oScoreCell.align = "center";
+        oScoreCell.noWrap = "true";
+        oScoreCell.appendChild( document.createTextNode( " - " ) );
+        oScoreCell.style.backgroundColor = ( oWinnerTeam != null ) ? '#dff0d8' : '#f2dede';
+
+        // Away cell
+        var oAwayCell = oRow.insertCell( oRow.cells.length );
+        appendTeamCell( oAwayCell, oAwayTeam, oAwayPoulePlace, false );
+
+        // Count this winner pick toward bets-to-do.
+        if ( bCanShowRadio )
+        {
+            var nDelta = ( oWinnerTeam != null ) ? 1 : null;
+            updateBetsToDo( nDelta, oScoreCell, false );
         }
     }
 
@@ -441,23 +845,37 @@ function Ctrl_BetEdit( oPoolUser, tsNow, sDivId ) {
             oCell.innerHTML = dateFormat( oGame.getStartDateTime(), 'HH:MM');
             oCell.className = 'hidden-xs';
 
-            oCell = oRow.insertCell( oRow.cells.length );
-            oCell.align = "right";
-            createPoulePlaceControl( oCell, oGame.getHomePoulePlace(), oRoundBetConfigs, true );
+            if ( oRoundBetConfigs[ VoetbalOog_Bet_Qualify.nId ] != undefined )
+            {
+                renderKnockoutGameCells( oRow, oGame, oRoundBetConfigs );
+            }
+            else
+            {
+                oCell = oRow.insertCell( oRow.cells.length );
+                oCell.align = "right";
+                createPoulePlaceControl( oCell, oGame.getHomePoulePlace(), oRoundBetConfigs, true );
 
-            oCell = oRow.insertCell( oRow.cells.length );
-            oCell.align = "center";
-            oCell.noWrap = "true";
-            createResultControl( oCell, oGame, oRoundBetConfigs );
+                oCell = oRow.insertCell( oRow.cells.length );
+                oCell.align = "center";
+                oCell.noWrap = "true";
+                createResultControl( oCell, oGame, oRoundBetConfigs );
 
-            oCell = oRow.insertCell( oRow.cells.length );
-            createPoulePlaceControl( oCell, oGame.getAwayPoulePlace(), oRoundBetConfigs, false );
+                oCell = oRow.insertCell( oRow.cells.length );
+                createPoulePlaceControl( oCell, oGame.getAwayPoulePlace(), oRoundBetConfigs, false );
+            }
 
             if ( oPoule.needsRanking() == false )
             {
                 oCell = oRow.insertCell( oRow.cells.length );
                 oCell.align = "center";
                 oCell.innerHTML = VoetbalOog_Poule_Factory().getName( oPoule, false );
+
+                if ( oRoundBetConfigs[ VoetbalOog_Bet_Qualify.nId ] != undefined )
+                {
+                    oCell = oRow.insertCell( oRow.cells.length );
+                    oCell.align = "center";
+                    oCell.innerHTML = getOpponentPouleName( oPoule );
+                }
             }
         }
     }
@@ -539,29 +957,148 @@ function Ctrl_BetEdit( oPoolUser, tsNow, sDivId ) {
 
                 var oPoulePlace = oPoulePlaces[nJ];
 
-                var oSelect = document.getElementById( getControlId( oRoundBetConfig, oPoulePlace, null ) );
-                if ( oSelect == undefined /*|| oSelect.type != 'select'*/ )
-                    continue;
-
                 var oQualifiedTeam = getTeamFromQualifyRule( oPoulePlace, oClonedGamesPerPoule, oRanking );
                 if ( oQualifiedTeam == null )
                     continue;
 
-                // normal onfocus
-                m_vtOldValue = oSelect.options[oSelect.selectedIndex].value;
+                var sControlId = getControlId( oRoundBetConfig, oPoulePlace, null );
+                var oWrapper = document.getElementById( sControlId );
+                if ( oWrapper == null )
+                    continue;
 
-                var nOldValue = oSelect.value;
-                for ( var i = 0 ; i < oSelect.options.length; i++ )
+                var oRadios = oWrapper.querySelectorAll( 'input[type="radio"]' );
+
+                // set m_vtOldValue to the currently checked radio (or -1 if none)
+                var oCurrentlyChecked = oWrapper.querySelector( 'input[type="radio"]:checked' );
+                m_vtOldValue = oCurrentlyChecked ? parseInt( oCurrentlyChecked.value, 10 ) : -1;
+
+                for ( var i = 0 ; i < oRadios.length; i++ )
                 {
-                    if ( oSelect.options[i].value == oQualifiedTeam.getId() )
+                    if ( parseInt( oRadios[i].value, 10 ) == oQualifiedTeam.getId() )
                     {
-                        oSelect.selectedIndex = i;
-                        m_oJQuery( oSelect ).trigger( "change" );
+                        oRadios[i].checked = true;
+                        m_oJQuery( oRadios[i] ).trigger( "change" );
                         break;
                     }
                 }
             }
         }
+    }
+
+    // Fills qualifier bets for nRoundId from the previous round's score/result bets.
+    // Only updates in-memory data; no DOM interaction.
+    // Must be called before rendering so team names are available.
+    function fillQualifierBetsData( nRoundId )
+    {
+        var oPool = m_oPoolUser.getPool();
+        var oCompetitionSeason = oPool.getCompetitionSeason();
+        var oRounds = oCompetitionSeason.getRounds();
+        var oRound = oRounds[nRoundId];
+
+        var oRoundBetConfigs = m_oPoolUser.getPool().getBetConfigs( oRound );
+        var oRoundBetConfig = oRoundBetConfigs[ VoetbalOog_Bet_Qualify.nId ];
+        if ( oRoundBetConfig == undefined )
+            return;
+
+        var oPreviousRound = oRound.getPrevious();
+        if ( oPreviousRound == null )
+            return;
+
+        var oPreviousRoundBetConfigs = m_oPoolUser.getPool().getBetConfigs( oPreviousRound );
+        var oPreviousRoundBetConfig = oPreviousRoundBetConfigs[ VoetbalOog_Bet_Score.nId ];
+        if ( oPreviousRoundBetConfig == null )
+            oPreviousRoundBetConfig = oPreviousRoundBetConfigs[ VoetbalOog_Bet_Result.nId ];
+        if ( oPreviousRoundBetConfig == undefined )
+            return;
+
+        var oRanking = new VoetbalOog_Ranking( oCompetitionSeason.getPromotionRule() );
+        var oPoules = oRound.getPoules();
+
+        var oClonedGamesPerPoule = new Object();
+        {
+            var oFromPoules = oPreviousRound.getPoules();
+            for ( var nI in oFromPoules ) {
+                if (!( oFromPoules.hasOwnProperty(nI) )) continue;
+                var oFromPoule = oFromPoules[nI];
+                oClonedGamesPerPoule[ oFromPoule.getId() ] = getClonedGames( oFromPoule, oPreviousRoundBetConfig );
+            }
+        }
+
+        var oBets = m_oPoolUser.getBets( oRoundBetConfig );
+        for ( var nI in oPoules )
+        {
+            if ( !( oPoules.hasOwnProperty( nI ) ) ) continue;
+            var oPoule = oPoules[nI];
+            var oPoulePlaces = oPoule.getPlaces();
+            for ( var nJ in oPoulePlaces )
+            {
+                if ( !( oPoulePlaces.hasOwnProperty( nJ ) ) ) continue;
+                var oPoulePlace = oPoulePlaces[nJ];
+                var oQualifiedTeam = getTeamFromQualifyRule( oPoulePlace, oClonedGamesPerPoule, oRanking );
+                if ( oQualifiedTeam == null ) continue;
+
+                var oBet = oBets[ oPoulePlace.getId() ];
+                if ( oBet == undefined )
+                {
+                    oBet = VoetbalOog_Bet_Factory().createObject( oRoundBetConfig.getBetType() );
+                    oBet.putId( "__NEW__" + oPoulePlace.getId() );
+                    oBet.putPoolUser( m_oPoolUser );
+                    oBet.putRoundBetConfig( oRoundBetConfig );
+                    oBet.putPoulePlace( oPoulePlace );
+                    oBets[ oPoulePlace.getId() ] = oBet;
+                }
+                oBet.putTeam( oQualifiedTeam.getId() );
+            }
+        }
+    }
+
+    // Creates a div containing radio buttons for a qualify bet.
+    // The div gets id=sControlId so it can be found later.
+    // Returns the wrapper div (not yet attached to any container).
+    function createQualifyRadioGroup( sControlId, oPoulePlace, oTeamBetted )
+    {
+        var oWrapper = document.createElement("div");
+        oWrapper.id = sControlId;
+        oWrapper.style.display = "inline-block";
+
+        var oTeams = new Object();
+        getTeamsForQualify( oPoulePlace, oTeams );
+
+        for ( var nId in oTeams )
+        {
+            if ( !( oTeams.hasOwnProperty( nId ) ) )
+                continue;
+
+            var oTeam = oTeams[nId];
+
+            var oLabel = document.createElement("label");
+            oLabel.className = "radio-inline";
+            oLabel.style.fontWeight = "normal";
+            oLabel.style.marginRight = "6px";
+
+            var oRadio = document.createElement("input");
+            oRadio.type = "radio";
+            oRadio.name = sControlId;
+            oRadio.value = oTeam.getId();
+
+            if ( oTeamBetted != null && oTeamBetted.getId() == oTeam.getId() )
+                oRadio.checked = true;
+
+            oRadio.onfocus = function() {
+                var oChk = document.querySelector( 'input[type="radio"][name="' + this.name + '"]:checked' );
+                m_vtOldValue = oChk ? parseInt( oChk.value, 10 ) : -1;
+            };
+            oRadio.onchange = function() {
+                updateBetQualifyFromRadio( this );
+                m_vtOldValue = parseInt( this.value, 10 );
+            };
+
+            oLabel.appendChild( oRadio );
+            oLabel.appendChild( document.createTextNode( "\u00a0" + oTeam.getName() ) );
+            oWrapper.appendChild( oLabel );
+        }
+
+        return oWrapper;
     }
 
     function createPoulePlaceControl( oTableCell, oPoulePlace, oRoundBetConfigs, bReverse )
@@ -580,38 +1117,23 @@ function Ctrl_BetEdit( oPoolUser, tsNow, sDivId ) {
             var oDeadLine = oRoundBetConfig.getDeadLine( null );
             if ( m_oNow <= oDeadLine ) // not passed deadline
             {
-                // create select here, get also team from pouleplace if is in database
-                var oSelect = document.createElement("select");
-                oSelect.className = "beteditinput";
-                oSelect.id = getControlId( oRoundBetConfig, oPoulePlace, null );
-                oSelect.name = oSelect.id;
-                oSelect.className = "form-control";
-                oSelect.style.display = "inline-block";
-                oSelect.style.minWidth = "75px";
-                oSelect.style.maxWidth = "120px";
-                oSelect.onchange = function(){
-                    updateBetQualify( this );
-                    m_vtOldValue = this.options[this.selectedIndex].value;
-                };
-                oSelect.onfocus = function(){ m_vtOldValue = this.options[this.selectedIndex].value; };
-
-                addOptionsToSelect( oSelect, oPoulePlace, oTeamBetted );
-
-                if ( bReverse == true )
-                {
-                    oTableCell.appendChild( oSelect );
-                    VoetbalOog_Control_Factory().appendPoulePlace( oTableCell, oPoulePlace, bReverse, false );
-                    oSelect.style.marginRight = "3px";
-                }
+                var sControlId = getControlId( oRoundBetConfig, oPoulePlace, null );
+                // Knockout rounds: show the auto-computed team name (no interactive radio).
+                // The winner radio in the score cell handles the next-round qualifier bet.
+                if ( oTeamBetted != null )
+                    VoetbalOog_Control_Factory().appendTeam( oTableCell, oTeamBetted, bReverse, false, false, false );
                 else
-                {
                     VoetbalOog_Control_Factory().appendPoulePlace( oTableCell, oPoulePlace, bReverse, false );
-                    oTableCell.appendChild( oSelect );
-                    oSelect.style.marginLeft = "3px";
-                }
 
-                var nDelta = ( oTeamBetted != null ) ? 1 : null;
-                updateBetsToDo( nDelta, oSelect.parentNode, false );
+                // Submit qualifier bet via hidden input so the server can save it.
+                if ( oTeamBetted != null )
+                {
+                    var oHidden = document.createElement("input");
+                    oHidden.type = "hidden";
+                    oHidden.name = sControlId;
+                    oHidden.value = oTeamBetted.getId();
+                    oTableCell.appendChild( oHidden );
+                }
             }
             else // passed limit show team betted
             {
@@ -636,6 +1158,9 @@ function Ctrl_BetEdit( oPoolUser, tsNow, sDivId ) {
 
         var oBets = m_oPoolUser.getBets( oRoundBetConfig );
         var oBet = oBets[ sPoulePlaceId ];
+        var nOldTeamId = null;
+        if ( oBet != undefined && oBet.getTeam() != null )
+            nOldTeamId = oBet.getTeam().getId();
         if ( oBet == undefined )
         {
             var nBetType = oRoundBetConfig.getBetType();
@@ -661,10 +1186,191 @@ function Ctrl_BetEdit( oPoolUser, tsNow, sDivId ) {
         updateBetsToDo( nDelta, oControl.parentNode, true );
         // end : update bets to do(done)
 
+        propagateQualifyTeamChange( oPoulePlace.getPoule().getRound(), nOldTeamId, vtTeamId );
+
         // start : update next qualifying
 		var oToQualifyRules = oPoulePlace.getPoule().getRound().getToQualifyRules();
 		refreshOptionsForQualifying( oToQualifyRules, oPoulePlace.getPoule() );
         // end : update next qualifying
+    }
+
+    // Handles a change on a qualify radio button.
+    // Parses the poule-place / round-bet-config from oRadio.name (the group name).
+    function updateBetQualifyFromRadio( oRadio )
+    {
+        var sControlId = oRadio.name;
+        var sPrefix = m_sDivId + m_sControlPrefix;
+        var sRest = sControlId.substr( sPrefix.length );
+        var sRoundBetConfigId = sRest.substr( 0, sRest.indexOf("_") );
+        var sPoulePlaceId = sRest.substr( sRest.indexOf("_") + 1 );
+
+        var oRoundBetConfig = VoetbalOog_Round_BetConfig_Factory().createObjectFromDatabase( sRoundBetConfigId );
+        var oPoulePlace = VoetbalOog_PoulePlace_Factory().createObjectFromDatabase( sPoulePlaceId );
+
+        var oBets = m_oPoolUser.getBets( oRoundBetConfig );
+        var oBet = oBets[ sPoulePlaceId ];
+        var nOldTeamId = null;
+        if ( oBet != undefined && oBet.getTeam() != null )
+            nOldTeamId = oBet.getTeam().getId();
+        if ( oBet == undefined )
+        {
+            var nBetType = oRoundBetConfig.getBetType();
+            oBet = VoetbalOog_Bet_Factory().createObject( nBetType );
+            oBet.putId( "__NEW__" + oPoulePlace.getId() );
+            oBet.putPoolUser( m_oPoolUser );
+            oBet.putRoundBetConfig( oRoundBetConfig );
+            oBet.putPoulePlace( oPoulePlace );
+            oBets[ sPoulePlaceId ] = oBet;
+        }
+
+        var vtTeamId = parseInt( oRadio.value, 10 );
+        oBet.putTeam( vtTeamId );
+
+        // Sync the hidden input that carries this slot's bet to the server.
+        // It lives in the next round's tab (created by renderKnockoutGameCells for that round).
+        // If the next round's teams were unknown at render time, no hidden input exists yet — create one.
+        var oHiddenInputs = document.querySelectorAll( 'input[type="hidden"][name="' + sControlId + '"]' );
+        if ( oHiddenInputs.length > 0 ) {
+            for ( var i = 0; i < oHiddenInputs.length; i++ )
+                oHiddenInputs[i].value = vtTeamId;
+        } else {
+            var oNewHidden = document.createElement("input");
+            oNewHidden.type = "hidden";
+            oNewHidden.name = sControlId;
+            oNewHidden.value = vtTeamId;
+            document.getElementById(m_sDivId).appendChild(oNewHidden);
+        }
+
+        // update bets to do(done)
+        // with radio buttons you can only go from unchecked (-1) to checked (>=0),
+        // not the other way around; a change between two checked radios has delta 0.
+        var nDelta = ( m_vtOldValue < 0 ) ? 1 : 0;
+        // wrapper div is: radio → label → wrapper
+        var oWrapper = oRadio.parentNode.parentNode;
+        updateBetsToDo( nDelta, oWrapper, true );
+
+        propagateQualifyTeamChange( oPoulePlace.getPoule().getRound(), nOldTeamId, vtTeamId );
+
+        // update next qualifying options
+        var oToQualifyRules = oPoulePlace.getPoule().getRound().getToQualifyRules();
+        refreshOptionsForQualifying( oToQualifyRules, oPoulePlace.getPoule() );
+    }
+
+    function propagateQualifyTeamChange( oStartRound, nOldTeamId, nNewTeamId )
+    {
+        if ( nOldTeamId == null || nNewTeamId == null || nOldTeamId == nNewTeamId )
+            return;
+
+        var oPool = m_oPoolUser.getPool();
+        var oRound = oStartRound.getNext();
+        while ( oRound != null )
+        {
+            var oRoundBetConfigs = oPool.getBetConfigs( oRound );
+            var oRoundBetConfig = oRoundBetConfigs[ VoetbalOog_Bet_Qualify.nId ];
+            if ( oRoundBetConfig == undefined )
+            {
+                oRound = oRound.getNext();
+                continue;
+            }
+
+            var oBets = m_oPoolUser.getBets( oRoundBetConfig );
+            for ( var sPoulePlaceId in oBets )
+            {
+                if ( !( oBets.hasOwnProperty( sPoulePlaceId ) ) )
+                    continue;
+
+                var oBet = oBets[ sPoulePlaceId ];
+                if ( oBet == null || oBet.getTeam() == null || oBet.getTeam().getId() != nOldTeamId )
+                    continue;
+
+                oBet.putTeam( nNewTeamId );
+
+                var oPoulePlace = oBet.getPoulePlace();
+                if ( oPoulePlace == null )
+                    oPoulePlace = VoetbalOog_PoulePlace_Factory().createObjectFromDatabase( sPoulePlaceId );
+
+                var sControlId = getControlId( oRoundBetConfig, oPoulePlace, null );
+                var oRadios = document.querySelectorAll( 'input[type="radio"][name="' + sControlId + '"]' );
+                if ( oRadios.length > 0 )
+                {
+                    var oNewRadio = null;
+                    var oOldRadio = null;
+                    for ( var nR = 0; nR < oRadios.length; nR++ )
+                    {
+                        if ( parseInt( oRadios[nR].value, 10 ) == nNewTeamId )
+                            oNewRadio = oRadios[nR];
+                        if ( parseInt( oRadios[nR].value, 10 ) == nOldTeamId )
+                            oOldRadio = oRadios[nR];
+                    }
+
+                    if ( oNewRadio == null && oOldRadio != null )
+                    {
+                        var oNewTeam = VoetbalOog_Team_Factory().createObjectFromDatabase( nNewTeamId );
+                        if ( oNewTeam != null )
+                        {
+                            var oLabel = oOldRadio.parentNode;
+                            var bRadioFirst = ( oLabel != null && oLabel.firstChild === oOldRadio );
+
+                            oOldRadio.value = nNewTeamId;
+
+                            if ( oLabel != null )
+                            {
+                                while ( oLabel.firstChild )
+                                    oLabel.removeChild( oLabel.firstChild );
+
+                                if ( bRadioFirst )
+                                {
+                                    oOldRadio.style.marginRight = '6px';
+                                    oOldRadio.style.marginLeft = '';
+                                    oLabel.appendChild( oOldRadio );
+                                    VoetbalOog_Control_Factory().appendTeam( oLabel, oNewTeam, false, false, false, false );
+                                }
+                                else
+                                {
+                                    VoetbalOog_Control_Factory().appendTeam( oLabel, oNewTeam, true, false, false, false );
+                                    oOldRadio.style.marginLeft = '6px';
+                                    oOldRadio.style.marginRight = '';
+                                    oLabel.appendChild( oOldRadio );
+                                }
+                            }
+                            oNewRadio = oOldRadio;
+                        }
+                    }
+
+                    for ( var nR2 = 0; nR2 < oRadios.length; nR2++ )
+                    {
+                        oRadios[nR2].checked = false;
+                        var oLbl2 = oRadios[nR2].parentNode;
+                        if ( oLbl2 != null && oLbl2.className != undefined )
+                            oLbl2.className = oLbl2.className.replace( " active", "" );
+                    }
+
+                    if ( oNewRadio != null ) {
+                        oNewRadio.checked = true;
+                        var oParentLabel = oNewRadio.parentNode;
+                        if ( oParentLabel != null && oParentLabel.className != undefined && oParentLabel.className.indexOf( "btn" ) >= 0 && oParentLabel.className.indexOf( " active" ) < 0 )
+                            oParentLabel.className += " active";
+                    }
+                }
+
+                var oHiddenInputs = document.querySelectorAll( 'input[type="hidden"][name="' + sControlId + '"]' );
+                if ( oHiddenInputs.length > 0 )
+                {
+                    for ( var nI = 0; nI < oHiddenInputs.length; nI++ )
+                        oHiddenInputs[nI].value = nNewTeamId;
+                }
+                else
+                {
+                    var oNewHidden = document.createElement( "input" );
+                    oNewHidden.type = "hidden";
+                    oNewHidden.name = sControlId;
+                    oNewHidden.value = nNewTeamId;
+                    document.getElementById( m_sDivId ).appendChild( oNewHidden );
+                }
+            }
+
+            oRound = oRound.getNext();
+        }
     }
 
     function createResultControl( oTableCell, oGame, oRoundBetConfigs )
@@ -746,6 +1452,24 @@ function Ctrl_BetEdit( oPoolUser, tsNow, sDivId ) {
 
             var nDelta = ( nGoalsBetted >= 0 && nGoalsBettedHome >= 0 ) ? 1 : null;
             updateBetsToDo( nDelta, oSelect.parentNode, false );
+
+            // Auto-derive result bet from score and add as hidden input.
+            var oResultBetConfig = oRoundBetConfigs[ VoetbalOog_Bet_Result.nId ];
+            if ( oResultBetConfig != undefined )
+            {
+                var sResultControlId = getControlId( oResultBetConfig, oGame, null );
+                var oHiddenResult = document.createElement("input");
+                oHiddenResult.type = "hidden";
+                oHiddenResult.id   = sResultControlId;
+                oHiddenResult.name = sResultControlId;
+                if ( nGoalsBetted >= 0 && nGoalsBettedHome >= 0 )
+                    oHiddenResult.value = ( nGoalsBettedHome > nGoalsBetted ) ? 1
+                                        : ( nGoalsBettedHome < nGoalsBetted ) ? -1 : 0;
+                else
+                    oHiddenResult.value = -2;
+                oSelect.parentNode.appendChild( oHiddenResult );
+                updateBetsToDo( nDelta, oSelect.parentNode, false );
+            }
         }
 
         return oSelect;
@@ -784,6 +1508,29 @@ function Ctrl_BetEdit( oPoolUser, tsNow, sDivId ) {
             sPostfixOther = "_homegoals";
         }
 
+        var oRound = oRoundBetConfig.getRound();
+        var oNextRound = oRound.getNext();
+        var oNextRoundBetConfig = null;
+        var oPreviousRoundTeams = null;
+        if ( oRound.getNumber() == 0 && oNextRound != null )
+        {
+            var oNextRoundBetConfigs = m_oPoolUser.getPool().getBetConfigs( oNextRound );
+            oNextRoundBetConfig = oNextRoundBetConfigs[ VoetbalOog_Bet_Qualify.nId ];
+            if ( oNextRoundBetConfig != undefined )
+            {
+                oPreviousRoundTeams = {};
+                var oPreviousBets = m_oPoolUser.getBets( oNextRoundBetConfig );
+                for ( var sPoulePlaceId in oPreviousBets )
+                {
+                    if ( !( oPreviousBets.hasOwnProperty( sPoulePlaceId ) ) )
+                        continue;
+
+                    var oPreviousBet = oPreviousBets[ sPoulePlaceId ];
+                    oPreviousRoundTeams[ sPoulePlaceId ] = ( oPreviousBet != null && oPreviousBet.getTeam() != null ) ? oPreviousBet.getTeam().getId() : null;
+                }
+            }
+        }
+
         // update bets to do(done)
         {
             var sControlIdOther = oControl.id.replace( sPostfix, sPostfixOther );
@@ -798,6 +1545,47 @@ function Ctrl_BetEdit( oPoolUser, tsNow, sDivId ) {
 
             // var oRoundBetConfigs = m_oPoolUser.getPool().getBetConfigs( oRoundBetConfig.getRound() );
             updateBetsToDo( nDelta, oControl.parentNode, true );
+        }
+
+        if ( oRound.getNumber() == 0 && oNextRoundBetConfig != undefined )
+        {
+            fillQualifierBetsData( oNextRound.getId() );
+
+            if ( oPreviousRoundTeams != null )
+            {
+                var oCurrentNextRoundBets = m_oPoolUser.getBets( oNextRoundBetConfig );
+                for ( var sCurrentPoulePlaceId in oCurrentNextRoundBets )
+                {
+                    if ( !( oCurrentNextRoundBets.hasOwnProperty( sCurrentPoulePlaceId ) ) )
+                        continue;
+
+                    var oCurrentBet = oCurrentNextRoundBets[ sCurrentPoulePlaceId ];
+                    var nOldTeamId = oPreviousRoundTeams[ sCurrentPoulePlaceId ];
+                    var nNewTeamId = ( oCurrentBet != null && oCurrentBet.getTeam() != null ) ? oCurrentBet.getTeam().getId() : null;
+                    if ( nOldTeamId != null && nNewTeamId != null && nOldTeamId != nNewTeamId )
+                        propagateQualifyTeamChange( oRound, nOldTeamId, nNewTeamId );
+                }
+            }
+        }
+
+        // Auto-update the result hidden input derived from the score.
+        {
+            var oRoundBetConfigs = m_oPoolUser.getPool().getBetConfigs( oRoundBetConfig.getRound() );
+            var oResultBetConfig = oRoundBetConfigs[ VoetbalOog_Bet_Result.nId ];
+            if ( oResultBetConfig != undefined )
+            {
+                var sResultControlId = getControlId( oResultBetConfig, oGame, null );
+                var oHiddenResult = document.getElementById( sResultControlId );
+                if ( oHiddenResult != null )
+                {
+                    var nHome = parseInt( oBet.getHomeGoals(), 10 );
+                    var nAway = parseInt( oBet.getAwayGoals(), 10 );
+                    if ( nHome >= 0 && nAway >= 0 )
+                        oHiddenResult.value = ( nHome > nAway ) ? 1 : ( nHome < nAway ) ? -1 : 0;
+                    else
+                        oHiddenResult.value = -2;
+                }
+            }
         }
 
         updatePouleStandings( oGame.getHomePoulePlace().getPoule(), oRoundBetConfig );
@@ -966,17 +1754,40 @@ function Ctrl_BetEdit( oPoolUser, tsNow, sDivId ) {
         updateTabStates();
     }
 
+    function storePostSaveTab( sPaneId )
+    {
+        var nRoundNr = parseInt( sPaneId.replace("betedit-roundnr-", ""), 10 );
+        var nDone  = m_arrBetsDonePerRound[nRoundNr]  || 0;
+        var nAvail = m_arrBetsAvailablePerRound[nRoundNr] || 0;
+        var bAllDone = ( nAvail > 0 && nDone >= nAvail );
+        var sTargetId = sPaneId;
+        if ( bAllDone ) {
+            var oNavLink = document.querySelector( 'a[href="#' + sPaneId + '"]' );
+            if ( oNavLink ) {
+                var oNextLi = oNavLink.parentElement.nextElementSibling;
+                if ( oNextLi ) {
+                    var oNextLink = oNextLi.querySelector( 'a[href^="#betedit-roundnr-"]' );
+                    if ( oNextLink ) {
+                        sTargetId = oNextLink.getAttribute("href").substring(1);
+                    }
+                }
+            }
+        }
+        try { sessionStorage.setItem( 'betedit_active_tab', sTargetId ); } catch(e) {}
+    }
+
     function appendTabSaveButton( oPane )
     {
+        oPane.style.paddingBottom = "40px";
         var oSaveDiv = oPane.appendChild(document.createElement("div"));
         oSaveDiv.style.textAlign = "center";
         oSaveDiv.style.margin = "10px 0";
         var oSaveButton = oSaveDiv.appendChild(document.createElement("input"));
         oSaveButton.type = "submit";
-        oSaveButton.className = "btn btn-default";
-        oSaveButton.style.fontWeight = "bold";
+        oSaveButton.className = "btn btn-primary";
         oSaveButton.name = "btnsavebets";
         oSaveButton.value = "opslaan";
+        oSaveButton.onclick = function() { storePostSaveTab( oPane.id ); };
     }
 
     function getRoundNrFromDiv( oDiv )
@@ -1148,8 +1959,8 @@ function Ctrl_BetEdit( oPoolUser, tsNow, sDivId ) {
         }
     }
 
-    // 1 refill all the next qualifyng select-boxes from oToQualifyRules and only where Poule is oFromPoule
-    // 2 if the selected value is not in the selectable-values than deselect the select-box
+    // 1 refill all the next qualifying radio-groups from oToQualifyRules and only where Poule is oFromPoule
+    // 2 if the checked team is no longer in the candidate list, deselect and reset the bet
     function refreshOptionsForQualifying( oToQualifyRules, oFromPoule )
     {
 		for ( var nI in oToQualifyRules ) {
@@ -1158,7 +1969,6 @@ function Ctrl_BetEdit( oPoolUser, tsNow, sDivId ) {
 
 			var oToQualifyRule = oToQualifyRules[nI];
 
-			// var bFromPouleInQualifyRule
 			var oFromPoules = oToQualifyRule.getFromPoules();
 			if ( oFromPoules[ oFromPoule.getId() ] == null)
 				continue;
@@ -1172,29 +1982,59 @@ function Ctrl_BetEdit( oPoolUser, tsNow, sDivId ) {
 
 				if ( oRBCQualify != null )
 				{
-					// get selectbox
-					var sSelectId = getControlId(oRBCQualify, oToPoulePlace, null);
-					var oSelect = document.getElementById(sSelectId);
-					if (oSelect != null) {
-						// save selected value
-						var nSelectedId = parseInt(oSelect.options[oSelect.selectedIndex].value, 10);
+					var sControlId = getControlId(oRBCQualify, oToPoulePlace, null);
+					var oWrapper = document.getElementById(sControlId);
+					if (oWrapper != null) {
+						// save currently checked team id
+						var oCheckedRadio = oWrapper.querySelector('input[type="radio"]:checked');
+						var nSelectedTeamId = oCheckedRadio ? parseInt(oCheckedRadio.value, 10) : -1;
 
-						var oTeamSelected = null;
-						if (nSelectedId >= 0) {
-							oTeamSelected = VoetbalOog_Team_Factory().createObjectFromDatabase(nSelectedId);
+						// rebuild radio buttons with fresh candidates
+						oWrapper.innerHTML = '';
+						var oTeams = new Object();
+						getTeamsForQualify(oToPoulePlace, oTeams);
+
+						var bFound = false;
+						for (var nId in oTeams) {
+							if (!oTeams.hasOwnProperty(nId)) continue;
+
+							var oTeam = oTeams[nId];
+							var oLabel = document.createElement("label");
+							oLabel.className = "radio-inline";
+							oLabel.style.fontWeight = "normal";
+							oLabel.style.marginRight = "6px";
+
+							var oRadio = document.createElement("input");
+							oRadio.type = "radio";
+							oRadio.name = sControlId;
+							oRadio.value = oTeam.getId();
+
+							if (parseInt(oTeam.getId(), 10) == nSelectedTeamId) {
+								oRadio.checked = true;
+								bFound = true;
+							}
+
+							oRadio.onfocus = function() {
+								var oChk = document.querySelector('input[type="radio"][name="' + this.name + '"]:checked');
+								m_vtOldValue = oChk ? parseInt(oChk.value, 10) : -1;
+							};
+							oRadio.onchange = function() {
+								updateBetQualifyFromRadio(this);
+								m_vtOldValue = parseInt(this.value, 10);
+							};
+
+							oLabel.appendChild(oRadio);
+							oLabel.appendChild(document.createTextNode("\u00a0" + oTeam.getName()));
+							oWrapper.appendChild(oLabel);
 						}
 
-						// refill select box and select previously saved value, if possible
-						m_oJQuery(oSelect).empty();
-						var bSelected = addOptionsToSelect(oSelect, oToPoulePlace, oTeamSelected);
-
-						// when no reselect is possible, nrofbets-todo should be changed and betted team should be set to null
-						if (oTeamSelected != null && bSelected == false) {
+						// if previously checked team is no longer a candidate, reset the bet
+						if (nSelectedTeamId >= 0 && !bFound) {
 							var oBets = m_oPoolUser.getBets(oRBCQualify);
 							var oBet = oBets[oToPoulePlace.getId()];
 							if (oBet != null)
 								oBet.putTeam(null);
-							updateBetsToDo(-1, oSelect.parentNode, true);
+							updateBetsToDo(-1, oWrapper, true);
 						}
 					}
 				}
@@ -1230,6 +2070,50 @@ function Ctrl_BetEdit( oPoolUser, tsNow, sDivId ) {
             /*
              var oContainerTmp = document.createElement('div');
 
+
+            var oRound = oRoundBetConfig.getRound();
+            var oNextRound = oRound.getNext();
+            var oNextRoundBetConfig = null;
+            var oPreviousRoundTeams = null;
+            if ( oNextRound != null )
+            {
+                var oNextRoundBetConfigs = m_oPoolUser.getPool().getBetConfigs( oNextRound );
+                oNextRoundBetConfig = oNextRoundBetConfigs[ VoetbalOog_Bet_Qualify.nId ];
+                if ( oNextRoundBetConfig != undefined )
+                {
+                    oPreviousRoundTeams = {};
+                    var oPreviousBets = m_oPoolUser.getBets( oNextRoundBetConfig );
+                    for ( var sPoulePlaceId in oPreviousBets )
+                    {
+                        if ( !( oPreviousBets.hasOwnProperty( sPoulePlaceId ) ) )
+                            continue;
+
+                        var oPreviousBet = oPreviousBets[ sPoulePlaceId ];
+                        oPreviousRoundTeams[ sPoulePlaceId ] = ( oPreviousBet != null && oPreviousBet.getTeam() != null ) ? oPreviousBet.getTeam().getId() : null;
+                    }
+                }
+            }
+
+            if ( oRound.getNumber() == 0 )
+            {
+                fillQualifierBetsData( 1 );
+
+                if ( oPreviousRoundTeams != null )
+                {
+                    var oCurrentNextRoundBets = m_oPoolUser.getBets( oNextRoundBetConfig );
+                    for ( var sCurrentPoulePlaceId in oCurrentNextRoundBets )
+                    {
+                        if ( !( oCurrentNextRoundBets.hasOwnProperty( sCurrentPoulePlaceId ) ) )
+                            continue;
+
+                        var oCurrentBet = oCurrentNextRoundBets[ sCurrentPoulePlaceId ];
+                        var nOldTeamId = oPreviousRoundTeams[ sCurrentPoulePlaceId ];
+                        var nNewTeamId = ( oCurrentBet != null && oCurrentBet.getTeam() != null ) ? oCurrentBet.getTeam().getId() : null;
+                        if ( nOldTeamId != null && nNewTeamId != null && nOldTeamId != nNewTeamId )
+                            propagateQualifyTeamChange( oRound, nOldTeamId, nNewTeamId );
+                    }
+                }
+            }
              var oDivTmp = oContainerTmp.appendChild( document.createElement('div') );
              oDivTmp.className = " spriteteam-16 sprite-" + oTeam.getImageName() + "-16";
              oDivTmp.style.paddingLeft = '18px';

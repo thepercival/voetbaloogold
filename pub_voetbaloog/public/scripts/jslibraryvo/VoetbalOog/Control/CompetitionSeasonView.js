@@ -7,7 +7,7 @@ function Ctrl_CompetitionSeasonView( oCompetitionSeason, tsNow, sDivId, jsonOpti
 	var m_sPouleRankingParentPrefix = '-poulerank-parent-id-';
 	var m_sTableClassName = 'table table-striped';
 	var m_arrColumnsGames = null;
-	var m_jsonColumnGameId = { header : null };
+	var m_jsonColumnGameId = { header : 'Id' };
 	var m_jsonOptions = jsonOptions;
 	var m_oRoundInProgress = null;
 
@@ -60,6 +60,10 @@ function Ctrl_CompetitionSeasonView( oCompetitionSeason, tsNow, sDivId, jsonOpti
       });
     }
 
+		var bKnockout = oRound.getType() == VoetbalOog_Round.TYPE_KNOCKOUT;
+		if ( bKnockout )
+			arrPoules = getOrderedKnockoutPoules( oRound );
+
 		var oTable = null;
     var oPoule = null;
 		while( oPoule = arrPoules.shift() )
@@ -80,10 +84,10 @@ function Ctrl_CompetitionSeasonView( oCompetitionSeason, tsNow, sDivId, jsonOpti
 					oTable.className = m_sTableClassName;
 					oContainer.appendChild( oTable );
 					if ( canHaveGames )
-						showPouleGamesHeaders( oTable, oPoule );
+						showPouleGamesHeaders( oTable, oPoule, bKnockout );
 				}
 				if ( canHaveGames )
-					showPouleGames( oTable, oPoule );
+					showPouleGames( oTable, oPoule, bKnockout );
 				else
 				{
 					showWinner( oTable, oPoule );
@@ -153,8 +157,8 @@ function Ctrl_CompetitionSeasonView( oCompetitionSeason, tsNow, sDivId, jsonOpti
 			oTable.className = m_sTableClassName;
 			oGamesDiv.appendChild( oTable );
 
-			showPouleGamesHeaders( oTable, oPoule );
-			showPouleGames( oTable, oPoule );
+			showPouleGamesHeaders( oTable, oPoule, false );
+			showPouleGames( oTable, oPoule, false );
 
 			if ( m_jsonOptions["maxheightpoulegames"] > 0 )
 			{
@@ -196,7 +200,7 @@ function Ctrl_CompetitionSeasonView( oCompetitionSeason, tsNow, sDivId, jsonOpti
 		return m_sDivId + m_sPouleRankingParentPrefix + nPouleId;
 	};
 
-	function showPouleGamesHeaders( oTable, oPoule )
+	function showPouleGamesHeaders( oTable, oPoule, bKnockout )
 	{
 		var oRowHeader = oTable.insertRow( oTable.rows.length );
 		oRowHeader.className = 'tableheader';
@@ -224,10 +228,17 @@ function Ctrl_CompetitionSeasonView( oCompetitionSeason, tsNow, sDivId, jsonOpti
 			var oCell = oRowHeader.appendChild( document.createElement("th") );
 			oCell.style.textAlign = 'center';
 			oCell.innerHTML = m_jsonColumnGameId.header;
+
+			if ( bKnockout )
+			{
+				oCell = oRowHeader.appendChild( document.createElement("th") );
+				oCell.style.textAlign = 'center';
+				oCell.innerHTML = 'vs';
+			}
 		}
 	}
 
-	function showPouleGames( oTable, oPoule )
+	function showPouleGames( oTable, oPoule, bKnockout )
 	{
 		var arrGames = oPoule.getGamesByDate();
 
@@ -273,8 +284,189 @@ function Ctrl_CompetitionSeasonView( oCompetitionSeason, tsNow, sDivId, jsonOpti
 				oCell = oRow.insertCell( oRow.cells.length );
 				oCell.align = "center";
 				oCell.innerHTML = VoetbalOog_Poule_Factory().getName( oPoule, false );
+
+				if ( bKnockout )
+				{
+					oCell = oRow.insertCell( oRow.cells.length );
+					oCell.align = "center";
+					oCell.innerHTML = getOpponentPouleName( oPoule );
+				}
 			}
 		}
+	}
+
+	function getOrderedKnockoutPoules( oRound )
+	{
+		var oAllPoules = oRound.getPoules();
+		var oPouleById = {};
+		var nPouleCount = 0;
+
+		for ( var nK in oAllPoules )
+		{
+			if ( !( oAllPoules.hasOwnProperty( nK ) ) )
+				continue;
+
+			oPouleById[ oAllPoules[nK].getId() ] = oAllPoules[nK];
+			nPouleCount++;
+		}
+
+		if ( nPouleCount <= 1 )
+		{
+			var arrSingle = [];
+			for ( var nS in oPouleById )
+			{
+				if ( oPouleById.hasOwnProperty( nS ) )
+					arrSingle.push( oPouleById[nS] );
+			}
+			return arrSingle;
+		}
+
+		var oToQualifyRules = oRound.getToQualifyRules();
+		var oFromPouleToDestInfo = {};
+		var oNextPouleMap = {};
+
+		for ( var nR in oToQualifyRules )
+		{
+			if ( !( oToQualifyRules.hasOwnProperty( nR ) ) )
+				continue;
+
+			var oRule = oToQualifyRules[nR];
+			var arrDest = oRule.getToPoulePlaces();
+			if ( arrDest.length == 0 )
+				continue;
+
+			var oDestPlace = arrDest[0];
+			var oDestPoule = oDestPlace.getPoule();
+			oNextPouleMap[ oDestPoule.getId() ] = oDestPoule;
+
+			var oFromPoules = oRule.getFromPoules();
+			for ( var nP in oFromPoules )
+			{
+				if ( !( oFromPoules.hasOwnProperty( nP ) ) )
+					continue;
+
+				oFromPouleToDestInfo[nP] = {
+					destPouleId: oDestPoule.getId(),
+					destPlaceId: Number( oDestPlace.getId() )
+				};
+			}
+		}
+
+		var oNextRound = null;
+		for ( var nQ in oNextPouleMap )
+		{
+			if ( oNextPouleMap.hasOwnProperty( nQ ) )
+			{
+				oNextRound = oNextPouleMap[nQ].getRound();
+				break;
+			}
+		}
+
+		if ( oNextRound == null )
+		{
+			var arrFallback = [];
+			for ( var nF in oPouleById )
+			{
+				if ( oPouleById.hasOwnProperty( nF ) )
+					arrFallback.push( oPouleById[nF] );
+			}
+			return arrFallback;
+		}
+
+		var arrNextOrdered = getOrderedKnockoutPoules( oNextRound );
+		var oGroups = {};
+		for ( var nPId in oFromPouleToDestInfo )
+		{
+			if ( !( oFromPouleToDestInfo.hasOwnProperty( nPId ) ) )
+				continue;
+
+			var info = oFromPouleToDestInfo[nPId];
+			if ( !oGroups[ info.destPouleId ] )
+				oGroups[ info.destPouleId ] = [];
+			oGroups[ info.destPouleId ].push( { fromPouleId: nPId, destPlaceId: info.destPlaceId } );
+		}
+
+		for ( var nG in oGroups )
+		{
+			if ( oGroups.hasOwnProperty( nG ) )
+				oGroups[nG].sort( function( oA, oB ) { return oA.destPlaceId - oB.destPlaceId; } );
+		}
+
+		var arrResult = [];
+		var oIncluded = {};
+		for ( var nI = 0; nI < arrNextOrdered.length; nI++ )
+		{
+			var arrGroup = oGroups[ arrNextOrdered[nI].getId() ];
+			if ( arrGroup )
+			{
+				for ( var nE = 0; nE < arrGroup.length; nE++ )
+				{
+					var oFromPoule = oPouleById[ arrGroup[nE].fromPouleId ];
+					if ( oFromPoule )
+					{
+						arrResult.push( oFromPoule );
+						oIncluded[ arrGroup[nE].fromPouleId ] = true;
+					}
+				}
+			}
+		}
+
+		for ( var nU in oPouleById )
+		{
+			if ( oPouleById.hasOwnProperty( nU ) && !oIncluded[nU] )
+				arrResult.push( oPouleById[nU] );
+		}
+		return arrResult;
+	}
+
+	function getOpponentPouleName( oPoule )
+	{
+		var oToQualifyRules = oPoule.getRound().getToQualifyRules();
+		var oDestPoule = null;
+
+		for ( var nR in oToQualifyRules )
+		{
+			if ( !( oToQualifyRules.hasOwnProperty( nR ) ) )
+				continue;
+
+			var oRule = oToQualifyRules[nR];
+			var oFromPoules = oRule.getFromPoules();
+			if ( oFromPoules[ oPoule.getId() ] == null )
+				continue;
+
+			var arrDest = oRule.getToPoulePlaces();
+			if ( arrDest.length > 0 )
+				oDestPoule = arrDest[0].getPoule();
+			break;
+		}
+
+		if ( oDestPoule == null )
+			return '';
+
+		for ( var nR2 in oToQualifyRules )
+		{
+			if ( !( oToQualifyRules.hasOwnProperty( nR2 ) ) )
+				continue;
+
+			var oRule2 = oToQualifyRules[nR2];
+			var oFromPoules2 = oRule2.getFromPoules();
+			if ( oFromPoules2[ oPoule.getId() ] != null )
+				continue;
+
+			var arrDest2 = oRule2.getToPoulePlaces();
+			if ( arrDest2.length > 0 && arrDest2[0].getPoule().getId() == oDestPoule.getId() )
+			{
+				for ( var nP in oFromPoules2 )
+				{
+					if ( !( oFromPoules2.hasOwnProperty( nP ) ) )
+						continue;
+
+					return VoetbalOog_Poule_Factory().getName( oFromPoules2[nP], false );
+				}
+			}
+		}
+
+		return '';
 	}
 
 	function showWinner( oTable, oPoule )

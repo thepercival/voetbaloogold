@@ -68,6 +68,23 @@
 	<script type="text/javascript">var g_jsonVoetbal = <?= json_encode( new Voetbal_JSON() );?></script>
 </head>
 <body>
+<?php
+$sNavbarTitle = 'VoetbalOog';
+if ( isset( $this->oPool ) && $this->oPool !== null ) {
+	$oCompetitionSeason = null;
+	if ( isset( $this->oCompetitionSeason ) && $this->oCompetitionSeason !== null )
+		$oCompetitionSeason = $this->oCompetitionSeason;
+	else
+		$oCompetitionSeason = $this->oPool->getCompetitionSeason();
+
+	if ( $oCompetitionSeason !== null ) {
+		$sCompetitionName = $oCompetitionSeason->getName();
+		$sCompetitionName = str_replace( 'Wereld Kampioenschap', 'WK', $sCompetitionName );
+		$sCompetitionName = str_replace( 'Europees Kampioenschap', 'EK', $sCompetitionName );
+		$sNavbarTitle = trim( $this->oPool->getName() . ' ' . $sCompetitionName );
+	}
+}
+?>
 <nav class="navbar navbar-default header <?= ( APPLICATION_ENV !== "production" ) ? "navbar-non-production" : "" ?>">
 	<!-- Brand and toggle get grouped for better mobile display -->
 	<div class="navbar-header">
@@ -78,7 +95,7 @@
 			<span class="icon-bar"></span>
 		</button>
 		<h1>
-			<a class="navbar-brand menu" href="<?= Zend_Registry::get("baseurl") ?>"><img alt="VoetbalOog" width="20" height="20" style="float: left; margin-right:5px;" src="<?= Zend_Registry::get("baseurl") ?>public/images/logo_20.png">VoetbalOog</a>
+			<a class="navbar-brand menu" href="<?= Zend_Registry::get("baseurl") ?>" style="max-width: calc(100vw - 110px); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"><img alt="VoetbalOog" width="20" height="20" style="float: left; margin-right:5px;" src="<?= Zend_Registry::get("baseurl") ?>public/images/logo_20.png"><?= $this->escape( $sNavbarTitle ) ?></a>
 		</h1>
 	</div>
 	<!-- Collect the nav links, forms, and other content for toggling -->

@@ -158,7 +158,6 @@ class VoetbalOog_Pool extends Agenda_TimeSlot implements VoetbalOog_Pool_Interfa
 			{
                 $nNrOfBets = 0;
                 $oBetConfigs = $this->getBetConfigs( $oRound );
-                $bResultScoreCounted = false;
                 foreach( $oBetConfigs as $oBetConfig ) {
                     $nNrOfObjects = null;
                     if (($oBetConfig->getBetType() & VoetbalOog_Bet_Qualify::$nId) === VoetbalOog_Bet_Qualify::$nId) {
@@ -166,7 +165,7 @@ class VoetbalOog_Pool extends Agenda_TimeSlot implements VoetbalOog_Pool_Interfa
                             $nNrOfBets += $oRound->getPoulePlaces()->count();
                         }
                     }
-                    else if ( $bResultScoreCounted === false ) {
+                    else {
                         $oGames = $oRound->getGames();
                         if ( $oBetConfig->getBetTime() === VoetbalOog_BetTime::$nBeforeStartGame ){
                             foreach( $oGames as $oGame )
@@ -178,8 +177,6 @@ class VoetbalOog_Pool extends Agenda_TimeSlot implements VoetbalOog_Pool_Interfa
                         else if ( $oNow <= $oBetConfig->getDeadLine() ) {
                             $nNrOfBets += $oGames->count();
                         }
-
-                        $bResultScoreCounted = true;
                     }
                     $this->m_arrNrOfBets[$oRound->getNumber()] = $nNrOfBets;
                 }

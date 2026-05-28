@@ -3,6 +3,36 @@ old jquery based voetbaloog
 
 ---
 
+## Bet counting business rules
+
+Total bets per pool: **207** (formatType 1, 2026 season).
+
+| Round nr | Round name  | Bet types                                      | Count |
+|----------|-------------|------------------------------------------------|-------|
+| 0        | Group stage | `VoetbalOog_Bet_Score` + `VoetbalOog_Bet_Result` per game (12×6×2) | 144 |
+| 1        | 1/16 final  | `VoetbalOog_Bet_Qualify` per poule place       | 32    |
+| 2        | 1/8 final   | `VoetbalOog_Bet_Qualify` per poule place       | 16    |
+| 3        | 1/4 final   | `VoetbalOog_Bet_Qualify` per poule place       | 8     |
+| 4        | Semi-final  | `VoetbalOog_Bet_Qualify` per poule place       | 4     |
+| 5        | Final       | `VoetbalOog_Bet_Qualify` per poule place       | 2     |
+| 6        | Champion    | `VoetbalOog_Bet_Qualify` per poule place       | 1     |
+
+### How bets are made in each round's view
+
+- **Round nr 0 view**: User fills in the score → creates `VoetbalOog_Bet_Score` bet and auto-derives `VoetbalOog_Bet_Result` (no separate UI; result = 1 home win, 0 draw, -1 away win). The group-stage end ranking automatically sets the `VoetbalOog_Bet_Qualify` bets for round nr 1.
+- **Round nr 1–4 views**: User picks the winner of each game → creates `VoetbalOog_Bet_Qualify` bets for the *next* round's poule places.
+- **Round nr 5 view (final)**: User picks the tournament winner → creates the single `VoetbalOog_Bet_Qualify` bet for round nr 6 (champion).
+
+### Implementation notes
+
+- `Pool::getNrOfAvailableBets()` counts `$oRound->getPoulePlaces()->count()` for qualify rounds, and both `VoetbalOog_Bet_Score` and `VoetbalOog_Bet_Result` independently for round 0 (no `$bResultScoreCounted` guard).
+- `VoetbalOog_Bet_Result` is auto-derived from `VoetbalOog_Bet_Score` in JS (`appendScoreSelect`) and submitted as a hidden input; it is updated in `updateBetScore` whenever the score changes.
+- JS `m_nNrOfBetsDone` counts: score bets via `_awaygoals` select, result bets via auto-generated hidden input, round-1 current qualify bets via `updateBetsToDo` in `renderKnockoutGameCells` (first knockout round only), and winner-pick qualify bets via the score cell.
+- Post-save tab navigation: after saving, the active tab is restored via `sessionStorage`; if the saved round is fully complete, the next round's tab is opened instead.
+- Default active-tab logic on page load: first incomplete round with bets filled, otherwise first empty round, otherwise the last complete round.
+
+---
+
 ## Qualifier logic
 
 ### Competition season format types
