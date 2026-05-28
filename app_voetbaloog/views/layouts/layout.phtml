@@ -1,5 +1,6 @@
 <!DOCTYPE HTML>
 <html lang="nl" ng-app="voetbal">
+
 <head>
 	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 	<meta name="keywords" content="voetbalpool,voetbal,pool,wk,ek" />
@@ -24,18 +25,20 @@
 	<meta name="msapplication-TileImage" content="/favicon/favicon-144.png">
 	<meta name="msapplication-config" content="/favicon/browserconfig.xml">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-	<script type="text/javascript">var g_sPubMap = "<?= Zend_Registry::get("baseurl"); ?>";</script>
+	<script type="text/javascript">
+		var g_sPubMap = "<?= Zend_Registry::get("baseurl"); ?>";
+	</script>
 
 	<link rel="stylesheet" type="text/css" href="<?= Zend_Registry::get('baseurl'); ?>public/styles/bootstrap-3.3.4/css/bootstrap.min.css">
-    <link rel="stylesheet" type="text/css" href="<?= Zend_Registry::get('baseurl'); ?>public/styles/voetbaloog.css">
-    <link rel="stylesheet" type="text/css" href="<?= Zend_Registry::get('baseurl'); ?>public/styles/flaticon.css">
-    <link rel="stylesheet" type="text/css" href="<?= Zend_Registry::get('baseurl'); ?>public/styles/bootstrap_custom.css">
+	<link rel="stylesheet" type="text/css" href="<?= Zend_Registry::get('baseurl'); ?>public/styles/voetbaloog.css">
+	<link rel="stylesheet" type="text/css" href="<?= Zend_Registry::get('baseurl'); ?>public/styles/flaticon.css">
+	<link rel="stylesheet" type="text/css" href="<?= Zend_Registry::get('baseurl'); ?>public/styles/bootstrap_custom.css">
 
 
-	<?php if ( $this->angular === true ): ?>
+	<?php if ($this->angular === true): ?>
 		<link rel="stylesheet" type="text/css" href="<?= Zend_Registry::get('jsthirdparties'); ?>noUiSlider.8.1.0/nouislider.css">
-		<link rel="stylesheet" type="text/css" href="<?= Zend_Registry::get('jsthirdparties'); ?>css-progress-wizard/css/progress-wizard<?= ( APPLICATION_ENV === "production" ) ? ".min" : null ?>.css" >
-		<link rel="stylesheet" type="text/css" href="<?= Zend_Registry::get('baseurl'); ?>public/styles/draganddrop.css" >
+		<link rel="stylesheet" type="text/css" href="<?= Zend_Registry::get('jsthirdparties'); ?>css-progress-wizard/css/progress-wizard<?= (APPLICATION_ENV === "production") ? ".min" : null ?>.css">
+		<link rel="stylesheet" type="text/css" href="<?= Zend_Registry::get('baseurl'); ?>public/styles/draganddrop.css">
 	<?php endif; ?>
 
 	<?= $this->layout()->extracssincludes; ?>
@@ -45,12 +48,12 @@
 	<script src='<?= Zend_Registry::get('baseurl'); ?>public/styles/bootstrap-3.3.4/js/bootstrap.min.js'></script>
 	<script src='<?= Zend_Registry::get("jslibrary"); ?>IManager.js'></script>
 
-    <script src="<?= Zend_Registry::get("jslibrary"); ?>Point.js"></script>
-    <script src="<?= Zend_Registry::get("jslibrary"); ?>DivHelper.js"></script>
-    <script src="<?= Zend_Registry::get("jslibrary"); ?>AssociativeArray.js"></script>
+	<script src="<?= Zend_Registry::get("jslibrary"); ?>Point.js"></script>
+	<script src="<?= Zend_Registry::get("jslibrary"); ?>DivHelper.js"></script>
+	<script src="<?= Zend_Registry::get("jslibrary"); ?>AssociativeArray.js"></script>
 
 
-	<?php if ( $this->angular === true ): ?>
+	<?php if ($this->angular === true): ?>
 		<script src='//ajax.googleapis.com/ajax/libs/angularjs/1.4.7/angular.js'></script>
 		<script src="//ajax.googleapis.com/ajax/libs/angularjs/1.4.7/angular-sanitize.js"></script>
 		<script src="//ajax.googleapis.com/ajax/libs/angularjs/1.4.7/angular-resource.js"></script>
@@ -63,158 +66,160 @@
 	<?= $this->layout()->extrajsincludes; ?>
 
 	<script src="<?= Zend_Registry::get("baseurl"); ?>jsthirdparties/jsvoetbal/jquery/voetbal.js"></script>
-	<script src="<?= Zend_Registry::get("jsmap"); ?>custom.js" ></script>
+	<script src="<?= Zend_Registry::get("jsmap"); ?>custom.js"></script>
 
-	<script type="text/javascript">var g_jsonVoetbal = <?= json_encode( new Voetbal_JSON() );?></script>
+	<script type="text/javascript">
+		var g_jsonVoetbal = <?= json_encode(new Voetbal_JSON()); ?>
+	</script>
 </head>
+
 <body>
-<?php
-$sNavbarTitle = 'VoetbalOog';
-if ( isset( $this->oPool ) && $this->oPool !== null ) {
-	$oCompetitionSeason = null;
-	if ( isset( $this->oCompetitionSeason ) && $this->oCompetitionSeason !== null )
-		$oCompetitionSeason = $this->oCompetitionSeason;
-	else
-		$oCompetitionSeason = $this->oPool->getCompetitionSeason();
+	<?php
+	$sNavbarTitle = 'VoetbalOog';
+	if (isset($this->oPool) && $this->oPool !== null) {
+		$oCompetitionSeason = null;
+		if (isset($this->oCompetitionSeason) && $this->oCompetitionSeason !== null)
+			$oCompetitionSeason = $this->oCompetitionSeason;
+		else
+			$oCompetitionSeason = $this->oPool->getCompetitionSeason();
 
-	if ( $oCompetitionSeason !== null ) {
-		$sCompetitionName = $oCompetitionSeason->getName();
-		$sCompetitionName = str_replace( 'Wereld Kampioenschap', 'WK', $sCompetitionName );
-		$sCompetitionName = str_replace( 'Europees Kampioenschap', 'EK', $sCompetitionName );
-		$sNavbarTitle = trim( $this->oPool->getName() . ' ' . $sCompetitionName );
+		if ($oCompetitionSeason !== null) {
+			$sCompetitionName = $oCompetitionSeason->getName();
+			$sCompetitionName = str_replace('Wereld Kampioenschap', 'WK', $sCompetitionName);
+			$sCompetitionName = str_replace('Europees Kampioenschap', 'EK', $sCompetitionName);
+			$sNavbarTitle = trim($this->oPool->getName() . ' ' . $sCompetitionName);
+		}
 	}
-}
-?>
-<nav class="navbar navbar-default header <?= ( APPLICATION_ENV !== "production" ) ? "navbar-non-production" : "" ?>">
-	<!-- Brand and toggle get grouped for better mobile display -->
-	<div class="navbar-header">
-		<button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false">
-			<span class="sr-only">Toggle navigation</span>
-			<span class="icon-bar"></span>
-			<span class="icon-bar"></span>
-			<span class="icon-bar"></span>
-		</button>
-		<h1>
-			<a class="navbar-brand menu" href="<?= Zend_Registry::get("baseurl") ?>" style="max-width: calc(100vw - 110px); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"><img alt="VoetbalOog" width="20" height="20" style="float: left; margin-right:5px;" src="<?= Zend_Registry::get("baseurl") ?>public/images/logo_20.png"><?= $this->escape( $sNavbarTitle ) ?></a>
-		</h1>
-	</div>
-	<!-- Collect the nav links, forms, and other content for toggling -->
-	<div class="collapse navbar-collapse" id="navbar">
-		<ul class="nav navbar-nav">
-			<?php if( $this->arrMenuItems !== null ): ?>
-				<?php foreach( $this->arrMenuItems as $sName => $arrMenuItem ): ?>
-					<?php $sName = array_key_exists("nicename", $arrMenuItem ) ? $arrMenuItem["nicename"] : $sName; ?>
-					<li class="<?= $arrMenuItem["activeclass"] ? "active" : null ?>">
-						<a class="menu" href="<?= Zend_Registry::get("baseurl") . $arrMenuItem["action"] ?>poolid/<?= $this->oPool->getId() ?>/">
-							<?php if( array_key_exists("glyph", $arrMenuItem ) ): ?><span class="<?= $arrMenuItem["glyph"] ?>"></span><?php endif; ?><?= $sName ?>
-						</a>
-					</li>
-				<?php endforeach; ?>
-			<?php endif; ?>
-			<?php
-			$arrAdminList = null;
-			if ( $this->oUser !== null )
-			{
-				if ( $this->oUser->hasRole( "superadmin" ) )
-				{
-					$arrAdminList = array(
-						"competities" => "voetbal/competitie/index/",
-						"standaard<br>voorspelinstellingen" => "voorspelinstellingen/competitieseizoen/",
-						"voorspellingen" => "voorspellingenbijwerken/index/",
-						"teams" => "voetbal/team/index/",
-						"personen" => "voetbal/persoon/index/",
-						"seizoenen" => "voetbal/seizoen/index/",
-						"bonden" => "voetbal/bond/index/",
-						"divider1" => "divider",
-						"extern" => "voetbal/import/index/",
-						"divider2" => "divider",
-						"rollen, acties & menu" => "admin/autorisatie/index/",
-						"database" => "admin/database/index/",
-						"gebruikers" => "admin/gebruikersbeheer/index/",
-						"simuleer" => "admin/simuleer/index/"
-					);
-					// get latest comp season
-					$oOptions = Construction_Factory::createOptions();
-					$oOptions->addLimit(1);
-					$oCompetitionSeason = Voetbal_CompetitionSeason_Factory::createObjectsFromDatabaseCustom( true, false, $oOptions )->first();
-					if ( $oCompetitionSeason !== null )
-						$arrAdminList = array_merge( array( $oCompetitionSeason->getAbbreviation() => "voetbal/competitieseizoen/index/?id=".$oCompetitionSeason."&subject=planning" ), $arrAdminList);
+	?>
+	<nav class="navbar navbar-default header <?= (APPLICATION_ENV !== "production") ? "navbar-non-production" : "" ?>">
+		<!-- Brand and toggle get grouped for better mobile display -->
+		<div class="navbar-header">
+			<button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false">
+				<span class="sr-only">Toggle navigation</span>
+				<span class="icon-bar"></span>
+				<span class="icon-bar"></span>
+				<span class="icon-bar"></span>
+			</button>
+			<h1>
+				<a class="navbar-brand menu" href="<?= Zend_Registry::get("baseurl") ?>" style="max-width: calc(100vw - 110px); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"><img alt="VoetbalOog" width="20" height="20" style="float: left; margin-right:5px;" src="<?= Zend_Registry::get("baseurl") ?>public/images/logo_20.png"><?= $this->escape($sNavbarTitle) ?></a>
+			</h1>
+		</div>
+		<!-- Collect the nav links, forms, and other content for toggling -->
+		<div class="collapse navbar-collapse" id="navbar">
+			<ul class="nav navbar-nav">
+				<?php if ($this->arrMenuItems !== null): ?>
+					<?php foreach ($this->arrMenuItems as $sName => $arrMenuItem): ?>
+						<?php $sName = array_key_exists("nicename", $arrMenuItem) ? $arrMenuItem["nicename"] : $sName; ?>
+						<li class="<?= $arrMenuItem["activeclass"] ? "active" : null ?>">
+							<a class="menu" href="<?= Zend_Registry::get("baseurl") . $arrMenuItem["action"] ?>poolid/<?= $this->oPool->getId() ?>/">
+								<?php if (array_key_exists("glyph", $arrMenuItem)): ?><span class="<?= $arrMenuItem["glyph"] ?>"></span><?php endif; ?><?= $sName ?>
+							</a>
+						</li>
+					<?php endforeach; ?>
+				<?php endif; ?>
+				<?php
+				$arrAdminList = null;
+				if ($this->oUser !== null) {
+					if ($this->oUser->hasRole("superadmin")) {
+						$arrAdminList = array(
+							"competities" => "voetbal/competitie/index/",
+							"standaard<br>voorspelinstellingen" => "voorspelinstellingen/competitieseizoen/",
+							"voorspellingen" => "voorspellingenbijwerken/index/",
+							"teams" => "voetbal/team/index/",
+							"personen" => "voetbal/persoon/index/",
+							"seizoenen" => "voetbal/seizoen/index/",
+							"bonden" => "voetbal/bond/index/",
+							"divider1" => "divider",
+							"extern" => "voetbal/import/index/",
+							"divider2" => "divider",
+							"rollen, acties & menu" => "admin/autorisatie/index/",
+							"database" => "admin/database/index/",
+							"gebruikers" => "admin/gebruikersbeheer/index/",
+							"simuleer" => "admin/simuleer/index/"
+						);
+						// get latest comp season
+						$oOptions = Construction_Factory::createOptions();
+						$oOptions->addLimit(1);
+						$oCompetitionSeason = Voetbal_CompetitionSeason_Factory::createObjectsFromDatabaseCustom(true, false, $oOptions)->first();
+						if ($oCompetitionSeason !== null)
+							$arrAdminList = array_merge(array($oCompetitionSeason->getAbbreviation() => "voetbal/competitieseizoen/index/?id=" . $oCompetitionSeason . "&subject=planning"), $arrAdminList);
+					}
 				}
-			}
-			?>
-			<?php if( $arrAdminList!==null ): ?>
-				<li class="dropdown">
-					<a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">adm<span class="caret"></span></a>
-					<ul class="dropdown-menu">
-						<?php foreach ( $arrAdminList as $sName => $sAction ): ?>
-							<?php if( $sAction === "divider" ): ?>
-								<li class="divider"></li>
-							<?php else: ?>
-								<li><a href="<?= Zend_Registry::get("baseurl") . $sAction ?>"><?= $sName ?></a></li>
-							<?php endif ?>
-						<?php endforeach ?>
-					</ul>
-				</li>
-			<?php endif ?>
-		</ul>
-		<ul class="nav navbar-nav navbar-right">
-			<li>
-				<?php if( $this->oUser === null ): ?>
-					<a class="menu" href="<?= Zend_Registry::get('baseurl'); ?>user/login/">
-						<span class="glyphicon glyphicon-log-in"></span>&nbsp;<span>inloggen</span>
-					</a>
-				<?php else: ?>
-					<a class="menu" href="<?= Zend_Registry::get('baseurl'); ?>user/home/">
-						<span class="glyphicon glyphicon-user"></span>&nbsp;<span><?= $this->oUser->getName() ?></span>
-					</a>
+				?>
+				<?php if ($arrAdminList !== null): ?>
+					<li class="dropdown">
+						<a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">adm<span class="caret"></span></a>
+						<ul class="dropdown-menu">
+							<?php foreach ($arrAdminList as $sName => $sAction): ?>
+								<?php if ($sAction === "divider"): ?>
+									<li class="divider"></li>
+								<?php else: ?>
+									<li><a href="<?= Zend_Registry::get("baseurl") . $sAction ?>"><?= $sName ?></a></li>
+								<?php endif ?>
+							<?php endforeach ?>
+						</ul>
+					</li>
 				<?php endif ?>
-			</li>
-		</ul>
-	</div><!-- /.navbar-collapse -->
-	</div><!-- /.container-fluid -->
-</nav>
-<div id="content">
-	<?= $this->layout()->content; ?>
-</div>
-<footer class="footer container">
-	<div class="row" id="ft">
-		<div class="col-xs-12 col-sm-4">
-			<h3>contact</h3>
-			<div><span class="glyphicon glyphicon-envelope"></span> cdkdev@pm.me</div>
-		</div>
-		<div class="col-xs-12 col-sm-4">
-			<h3>projecten</h3>
-			<div><a target="_blank" href="https://www.superelf-eredivisie.nl/">superelf</a></div>
-			<div><a target="_blank" href="https://www.fctoernooi.nl/">fc toernooi</a></div>
-		</div>
-		<div class="col-xs-12 col-sm-4">
-			<h3>links</h3>
-			<div><a target="_blank" rel="license" href="http://creativecommons.org/licenses/by-nc-sa/3.0/">cc by-nc-sa<span> 3.0 licentie</span></a></div>
-			<div><a target="_blank" rel="license" href="http://www.flaticon.com/">flaticon.com</a></div>
-		</div>
+			</ul>
+			<ul class="nav navbar-nav navbar-right">
+				<li>
+					<?php if ($this->oUser === null): ?>
+						<a class="menu" href="<?= Zend_Registry::get('baseurl'); ?>user/login/">
+							<span class="glyphicon glyphicon-log-in"></span>&nbsp;<span>inloggen</span>
+						</a>
+					<?php else: ?>
+						<a class="menu" href="<?= Zend_Registry::get('baseurl'); ?>user/home/">
+							<span class="glyphicon glyphicon-user"></span>&nbsp;<span><?= $this->oUser->getName() ?></span>
+						</a>
+					<?php endif ?>
+				</li>
+			</ul>
+		</div><!-- /.navbar-collapse -->
+		</div><!-- /.container-fluid -->
+	</nav>
+	<div id="content">
+		<?= $this->layout()->content; ?>
 	</div>
-	<div class="hidden-xs" style="text-align: center; padding-top:50px;"><span class="glyphicon glyphicon-copyright-mark"></span> Coen Dunnink</div>
-</footer>
-<!-- loadingModal -->
-<div class="modal fade" id="loadingModal" tabindex="-1" role="dialog" aria-hidden="true">
-	<div class="modal-dialog modal-sm">
-		<div class="modal-content">
-			<div class="modal-body" align="center">
-				<h2><span class="glyphicon glyphicon-refresh spin"></span></h2>
+	<footer class="footer container">
+		<div class="row" id="ft">
+			<div class="col-xs-12 col-sm-4">
+				<h3>contact</h3>
+				<div><span class="glyphicon glyphicon-envelope"></span> cdkdev@pm.me</div>
 			</div>
-		</div><!-- /.modal-content -->
-	</div><!-- /.modal-dialog -->
-</div><!-- /.modal -->
+			<div class="col-xs-12 col-sm-4">
+				<h3>projecten</h3>
+				<div><a target="_blank" href="https://www.superelf-eredivisie.nl/">superelf</a></div>
+				<div><a target="_blank" href="https://www.fctoernooi.nl/">fc toernooi</a></div>
+			</div>
+			<div class="col-xs-12 col-sm-4">
+				<h3>links</h3>
+				<div><a target="_blank" rel="license" href="http://creativecommons.org/licenses/by-nc-sa/3.0/">cc by-nc-sa<span> 3.0 licentie</span></a></div>
+				<div><a target="_blank" rel="license" href="http://www.flaticon.com/">flaticon.com</a></div>
+			</div>
+		</div>
+		<div class="hidden-xs" style="text-align: center; padding-top:50px;"><span class="glyphicon glyphicon-copyright-mark"></span> Coen Dunnink</div>
+	</footer>
+	<!-- loadingModal -->
+	<div class="modal fade" id="loadingModal" tabindex="-1" role="dialog" aria-hidden="true">
+		<div class="modal-dialog modal-sm">
+			<div class="modal-content">
+				<div class="modal-body" align="center">
+					<h2><span class="glyphicon glyphicon-refresh spin"></span></h2>
+				</div>
+			</div><!-- /.modal-content -->
+		</div><!-- /.modal-dialog -->
+	</div><!-- /.modal -->
 
-<script type="text/javascript">
-	g_nUserId = <?= $this->oUser !== null ? $this->oUser->getId() : "null" ?>;
-</script>
-<?php if ( $this->angular === true ): ?>
-	<script src='<?= Zend_Registry::get("jsthirdparties"); ?>jsvoetbal/angular/app.js'></script>
-	<script src='<?= Zend_Registry::get("jsthirdparties"); ?>jsvoetbal/angular/competitionseason/structure.js'></script>
-	<script src='<?= Zend_Registry::get("jsthirdparties"); ?>jsvoetbal/angular/competitionseason/teams.js'></script>
-	<script src='<?= Zend_Registry::get("jsthirdparties"); ?>jsvoetbal/angular/competitionseason/games.js'></script>
-<?php endif; ?>
+	<script type="text/javascript">
+		g_nUserId = <?= $this->oUser !== null ? $this->oUser->getId() : "null" ?>;
+	</script>
+	<?php if ($this->angular === true): ?>
+		<script src='<?= Zend_Registry::get("jsthirdparties"); ?>jsvoetbal/angular/app.js'></script>
+		<script src='<?= Zend_Registry::get("jsthirdparties"); ?>jsvoetbal/angular/competitionseason/structure.js'></script>
+		<script src='<?= Zend_Registry::get("jsthirdparties"); ?>jsvoetbal/angular/competitionseason/teams.js'></script>
+		<script src='<?= Zend_Registry::get("jsthirdparties"); ?>jsvoetbal/angular/competitionseason/games.js'></script>
+	<?php endif; ?>
 
 </body>
+
 </html>

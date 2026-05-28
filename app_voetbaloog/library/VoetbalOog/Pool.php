@@ -29,7 +29,10 @@ class VoetbalOog_Pool extends Agenda_TimeSlot implements VoetbalOog_Pool_Interfa
 	/**
 	 * Constructs the class
 	 */
-	public function __construct(){ parent::__construct(); }
+	public function __construct()
+	{
+		parent::__construct();
+	}
 
 	/**
 	 * @see VoetbalOog_Pool_Interface::getName()
@@ -42,12 +45,11 @@ class VoetbalOog_Pool extends Agenda_TimeSlot implements VoetbalOog_Pool_Interfa
 	/**
 	 * @see VoetbalOog_Pool_Interface::putName()
 	 */
-	public function putName( $sName )
+	public function putName($sName)
 	{
-		if ( $this->m_bObserved === true )
-		{
-			$oObjectChange = MetaData_ObjectChange_Factory::createObjectChange( $this->getId(), "VoetbalOog_Pool::Name", $this->m_sName, $sName );
-			$this->notifyObservers( $oObjectChange );
+		if ($this->m_bObserved === true) {
+			$oObjectChange = MetaData_ObjectChange_Factory::createObjectChange($this->getId(), "VoetbalOog_Pool::Name", $this->m_sName, $sName);
+			$this->notifyObservers($oObjectChange);
 		}
 		$this->m_sName = $sName;
 	}
@@ -57,8 +59,8 @@ class VoetbalOog_Pool extends Agenda_TimeSlot implements VoetbalOog_Pool_Interfa
 	 */
 	public function getCompetitionSeason()
 	{
-		if ( is_int( $this->m_oCompetitionSeason ) )
-			$this->m_oCompetitionSeason = Voetbal_CompetitionSeason_Factory::createObjectFromDatabase( $this->m_oCompetitionSeason );
+		if (is_int($this->m_oCompetitionSeason))
+			$this->m_oCompetitionSeason = Voetbal_CompetitionSeason_Factory::createObjectFromDatabase($this->m_oCompetitionSeason);
 
 		return $this->m_oCompetitionSeason;
 	}
@@ -66,12 +68,11 @@ class VoetbalOog_Pool extends Agenda_TimeSlot implements VoetbalOog_Pool_Interfa
 	/**
 	 * @see VoetbalOog_Pool_Interface::putCompetitionSeason()
 	 */
-	public function putCompetitionSeason( $oCompetitionSeason )
+	public function putCompetitionSeason($oCompetitionSeason)
 	{
-		if ( $this->m_bObserved === true )
-		{
-			$oObjectChange = MetaData_ObjectChange_Factory::createObjectChange( $this->getId(), "VoetbalOog_Pool::CompetitionSeason", $this->m_oCompetitionSeason, $oCompetitionSeason );
-			$this->notifyObservers( $oObjectChange );
+		if ($this->m_bObserved === true) {
+			$oObjectChange = MetaData_ObjectChange_Factory::createObjectChange($this->getId(), "VoetbalOog_Pool::CompetitionSeason", $this->m_oCompetitionSeason, $oCompetitionSeason);
+			$this->notifyObservers($oObjectChange);
 		}
 		$this->m_oCompetitionSeason = $oCompetitionSeason;
 	}
@@ -79,28 +80,24 @@ class VoetbalOog_Pool extends Agenda_TimeSlot implements VoetbalOog_Pool_Interfa
 	/**
 	 * @see VoetbalOog_Pool_Interface::getUsers()
 	 */
-	public function getUsers( $bByRanking = false )
+	public function getUsers($bByRanking = false)
 	{
-		if ( $bByRanking === false )
-		{
-			if ( $this->m_oUsers === null )
-			{
+		if ($bByRanking === false) {
+			if ($this->m_oUsers === null) {
 				$oFilters = Construction_Factory::createOptions();
-				$oFilters->addFilter( "VoetbalOog_Pool_User::Pool", "EqualTo", $this );
-				$this->m_oUsers = VoetbalOog_Pool_User_Factory::createObjectsFromDatabase( $oFilters );
+				$oFilters->addFilter("VoetbalOog_Pool_User::Pool", "EqualTo", $this);
+				$this->m_oUsers = VoetbalOog_Pool_User_Factory::createObjectsFromDatabase($oFilters);
 			}
 			return $this->m_oUsers;
 		}
 
-		if ( $this->m_oUsersByRanking === null )
-		{
+		if ($this->m_oUsersByRanking === null) {
 			$this->m_oUsersByRanking = VoetbalOog_Pool_User_Factory::createObjects();
-			$this->m_oUsersByRanking->addCollection( $this->getUsers() );
+			$this->m_oUsersByRanking->addCollection($this->getUsers());
 
 			$this->m_oUsersByRanking->uasort(
-				function( $oPoolUserA, $oPoolUserB )
-				{
-					return ( $oPoolUserA->getPoints() > $oPoolUserB->getPoints() ? -1 : 1 );
+				function ($oPoolUserA, $oPoolUserB) {
+					return ($oPoolUserA->getPoints() > $oPoolUserB->getPoints() ? -1 : 1);
 				}
 			);
 		}
@@ -112,12 +109,11 @@ class VoetbalOog_Pool extends Agenda_TimeSlot implements VoetbalOog_Pool_Interfa
 	 */
 	public function getPayments()
 	{
-		if ( $this->m_oPayments === null )
-		{
+		if ($this->m_oPayments === null) {
 			$oFilters = Construction_Factory::createOptions();
-			$oFilters->addFilter( "VoetbalOog_Pool_Payment::Pool", "EqualTo", $this );
-			$oFilters->addOrder( "VoetbalOog_Pool_Payment::Place", false );
-			$this->m_oPayments = VoetbalOog_Pool_Payment_Factory::createObjectsFromDatabase( $oFilters );
+			$oFilters->addFilter("VoetbalOog_Pool_Payment::Pool", "EqualTo", $this);
+			$oFilters->addOrder("VoetbalOog_Pool_Payment::Place", false);
+			$this->m_oPayments = VoetbalOog_Pool_Payment_Factory::createObjectsFromDatabase($oFilters);
 		}
 		return $this->m_oPayments;
 	}
@@ -133,12 +129,11 @@ class VoetbalOog_Pool extends Agenda_TimeSlot implements VoetbalOog_Pool_Interfa
 	/**
 	 * @see VoetbalOog_Pool_Interface::putPicture()
 	 */
-	public function putPicture( $vtPicture )
+	public function putPicture($vtPicture)
 	{
-		if ( $this->m_bObserved === true )
-		{
-			$oObjectChange = MetaData_ObjectChange_Factory::createObjectChange( $this->getId(), "VoetbalOog_Pool_User::Picture", $this->m_vtPicture, $vtPicture );
-			$this->notifyObservers( $oObjectChange );
+		if ($this->m_bObserved === true) {
+			$oObjectChange = MetaData_ObjectChange_Factory::createObjectChange($this->getId(), "VoetbalOog_Pool_User::Picture", $this->m_vtPicture, $vtPicture);
+			$this->notifyObservers($oObjectChange);
 		}
 		$this->m_vtPicture = $vtPicture;
 	}
@@ -146,49 +141,44 @@ class VoetbalOog_Pool extends Agenda_TimeSlot implements VoetbalOog_Pool_Interfa
 	/**
 	 * @see VoetbalOog_Pool_Interface::getNrOfAvailableBets()
 	 */
-	public function getNrOfAvailableBets( $oRoundParam = null, $bAsArray = false, $oNow = null )
+	public function getNrOfAvailableBets($oRoundParam = null, $bAsArray = false, $oNow = null)
 	{
-		if ( $this->m_arrNrOfBets === null )
-		{
+		if ($this->m_arrNrOfBets === null) {
 			$this->m_arrNrOfBets = array();
-            if ( $oNow === null )
-                $oNow = Agenda_Factory::createDateTime();
+			if ($oNow === null)
+				$oNow = Agenda_Factory::createDateTime();
 			$oRounds = $this->getCompetitionSeason()->getRounds();
-			foreach ( $oRounds as $oRound )
-			{
-                $nNrOfBets = 0;
-                $oBetConfigs = $this->getBetConfigs( $oRound );
-                foreach( $oBetConfigs as $oBetConfig ) {
-                    $nNrOfObjects = null;
-                    if (($oBetConfig->getBetType() & VoetbalOog_Bet_Qualify::$nId) === VoetbalOog_Bet_Qualify::$nId) {
-                        if ( $oNow <= $oBetConfig->getDeadLine() ) {
-                            $nNrOfBets += $oRound->getPoulePlaces()->count();
-                        }
-                    }
-                    else {
-                        $oGames = $oRound->getGames();
-                        if ( $oBetConfig->getBetTime() === VoetbalOog_BetTime::$nBeforeStartGame ){
-                            foreach( $oGames as $oGame )
-                            {
-                                if ( $oNow <= $oBetConfig->getDeadLine( $oGame ) )
-                                    $nNrOfBets++;
-                            }
-                        }
-                        else if ( $oNow <= $oBetConfig->getDeadLine() ) {
-                            $nNrOfBets += $oGames->count();
-                        }
-                    }
-                    $this->m_arrNrOfBets[$oRound->getNumber()] = $nNrOfBets;
-                }
+			foreach ($oRounds as $oRound) {
+				$nNrOfBets = 0;
+				$oBetConfigs = $this->getBetConfigs($oRound);
+				foreach ($oBetConfigs as $oBetConfig) {
+					$nNrOfObjects = null;
+					if (($oBetConfig->getBetType() & VoetbalOog_Bet_Qualify::$nId) === VoetbalOog_Bet_Qualify::$nId) {
+						if ($oNow <= $oBetConfig->getDeadLine()) {
+							$nNrOfBets += $oRound->getPoulePlaces()->count();
+						}
+					} else {
+						$oGames = $oRound->getGames();
+						if ($oBetConfig->getBetTime() === VoetbalOog_BetTime::$nBeforeStartGame) {
+							foreach ($oGames as $oGame) {
+								if ($oNow <= $oBetConfig->getDeadLine($oGame))
+									$nNrOfBets++;
+							}
+						} else if ($oNow <= $oBetConfig->getDeadLine()) {
+							$nNrOfBets += $oGames->count();
+						}
+					}
+					$this->m_arrNrOfBets[$oRound->getNumber()] = $nNrOfBets;
+				}
 			}
 		}
-		if ( $oRoundParam === null ) {
-			if ( $bAsArray ) {
+		if ($oRoundParam === null) {
+			if ($bAsArray) {
 				return $this->m_arrNrOfBets;
 			}
-			return array_sum ( $this->m_arrNrOfBets );
+			return array_sum($this->m_arrNrOfBets);
 		}
-		return $this->m_arrNrOfBets[ $oRoundParam->getNumber() ];
+		return $this->m_arrNrOfBets[$oRoundParam->getNumber()];
 	}
 
 	/**
@@ -198,13 +188,11 @@ class VoetbalOog_Pool extends Agenda_TimeSlot implements VoetbalOog_Pool_Interfa
 	{
 		$nAvailablePoints = 0;
 		$oRounds = $this->getCompetitionSeason()->getRounds();
-		foreach ( $oRounds as $oRound )
-		{
-			$oBetConfigs = $this->getBetConfigs( $oRound );
-			foreach( $oBetConfigs as $oBetConfig )
-			{
+		foreach ($oRounds as $oRound) {
+			$oBetConfigs = $this->getBetConfigs($oRound);
+			foreach ($oBetConfigs as $oBetConfig) {
 				$nNrOfObjects = null;
-				if ( ( $oBetConfig->getBetType() & VoetbalOog_Bet_Qualify::$nId ) === VoetbalOog_Bet_Qualify::$nId )
+				if (($oBetConfig->getBetType() & VoetbalOog_Bet_Qualify::$nId) === VoetbalOog_Bet_Qualify::$nId)
 					$nNrOfObjects = $oRound->getPoulePlaces()->count();
 				else
 					$nNrOfObjects = $oRound->getGames()->count();
@@ -226,12 +214,11 @@ class VoetbalOog_Pool extends Agenda_TimeSlot implements VoetbalOog_Pool_Interfa
 	/**
 	 * @see VoetbalOog_Pool_Interface::putStake()
 	 */
-	public function putStake( $nStake )
+	public function putStake($nStake)
 	{
-		if ( $this->m_bObserved === true )
-		{
-			$oObjectChange = MetaData_ObjectChange_Factory::createObjectChange( $this->getId(), "VoetbalOog_Pool::Stake", $this->m_nStake, $nStake );
-			$this->notifyObservers( $oObjectChange );
+		if ($this->m_bObserved === true) {
+			$oObjectChange = MetaData_ObjectChange_Factory::createObjectChange($this->getId(), "VoetbalOog_Pool::Stake", $this->m_nStake, $nStake);
+			$this->notifyObservers($oObjectChange);
 		}
 		$this->m_nStake = $nStake;
 	}
@@ -239,16 +226,16 @@ class VoetbalOog_Pool extends Agenda_TimeSlot implements VoetbalOog_Pool_Interfa
 	/**
 	 * @see VoetbalOog_Pool_Interface::getBetConfigs()
 	 */
-	public function getBetConfigs( $oRound = null )
+	public function getBetConfigs($oRound = null)
 	{
-		if ( $this->m_oRoundBetConfigs === null )
-			$this->m_oRoundBetConfigs = VoetbalOog_Round_BetConfig_Factory::createObjectsFromDatabaseExt( $this );
+		if ($this->m_oRoundBetConfigs === null)
+			$this->m_oRoundBetConfigs = VoetbalOog_Round_BetConfig_Factory::createObjectsFromDatabaseExt($this);
 
-		if ( $oRound === null )
+		if ($oRound === null)
 			return $this->m_oRoundBetConfigs;
 
-		$oRoundBetConfigs = $this->m_oRoundBetConfigs[ $oRound->getId() ];
-		if ( $oRoundBetConfigs === null )
+		$oRoundBetConfigs = $this->m_oRoundBetConfigs[$oRound->getId()];
+		if ($oRoundBetConfigs === null)
 			return VoetbalOog_Round_BetConfig_Factory::createObjects();
 
 		return $oRoundBetConfigs;
@@ -257,21 +244,20 @@ class VoetbalOog_Pool extends Agenda_TimeSlot implements VoetbalOog_Pool_Interfa
 	/**
 	 * @see VoetbalOog_Pool_Interface::getBetTypes()
 	 */
-	public function getBetTypes( $oRound )
+	public function getBetTypes($oRound)
 	{
-		if ( $this->m_arrRoundBetTypes === null )
+		if ($this->m_arrRoundBetTypes === null)
 			$this->m_arrRoundBetTypes = array();
 
-		if ( array_key_exists( $oRound->getId(), $this->m_arrRoundBetTypes ) === false )
-		{
+		if (array_key_exists($oRound->getId(), $this->m_arrRoundBetTypes) === false) {
 			$nBetTypes = 0;
-			$oBetConfigs = $this->getBetConfigs( $oRound );
-			foreach( $oBetConfigs as $oBetConfig )
+			$oBetConfigs = $this->getBetConfigs($oRound);
+			foreach ($oBetConfigs as $oBetConfig)
 				$nBetTypes += $oBetConfig->getBetType();
-			$this->m_arrRoundBetTypes[ $oRound->getId() ] = $nBetTypes;
+			$this->m_arrRoundBetTypes[$oRound->getId()] = $nBetTypes;
 		}
 
-		return $this->m_arrRoundBetTypes[ $oRound->getId() ];
+		return $this->m_arrRoundBetTypes[$oRound->getId()];
 	}
 
 	/**
@@ -281,32 +267,25 @@ class VoetbalOog_Pool extends Agenda_TimeSlot implements VoetbalOog_Pool_Interfa
 	 */
 	public function getStartDateTime(): Agenda_DateTime
 	{
-		if ( $this->m_objStartDateTime === null )
-		{
+		if ($this->m_objStartDateTime === null) {
 			$oCompetitionSeason = $this->getCompetitionSeason();
 			$oRounds = $oCompetitionSeason->getRounds();
 
-			foreach ( $oRounds as $oRound )
-			{
-				$oBetConfigs = $this->getBetConfigs( $oRound );
+			foreach ($oRounds as $oRound) {
+				$oBetConfigs = $this->getBetConfigs($oRound);
 
-				foreach( $oBetConfigs as $oBetConfig )
-				{
-					if ( $oBetConfig->getBetTime() === VoetbalOog_BetTime::$nBeforeCompetitionSeason )
-					{
+				foreach ($oBetConfigs as $oBetConfig) {
+					if ($oBetConfig->getBetTime() === VoetbalOog_BetTime::$nBeforeCompetitionSeason) {
 						$this->m_objStartDateTime = $oCompetitionSeason->getStartDateTime();
 						return $this->m_objStartDateTime;
-					}
-					elseif ( $oBetConfig->getBetTime() === VoetbalOog_BetTime::$nBeforeStartPreviousRound )
-					{
-						if ( $this->m_objStartDateTime === null )
-							$this->m_objStartDateTime = $oCompetitionSeason->getPreviousRound( $oRound )->getStartDateTime();
-					}
-					elseif ( $oBetConfig->getBetTime() === VoetbalOog_BetTime::$nBeforeStartRound
+					} elseif ($oBetConfig->getBetTime() === VoetbalOog_BetTime::$nBeforeStartPreviousRound) {
+						if ($this->m_objStartDateTime === null)
+							$this->m_objStartDateTime = $oCompetitionSeason->getPreviousRound($oRound)->getStartDateTime();
+					} elseif (
+						$oBetConfig->getBetTime() === VoetbalOog_BetTime::$nBeforeStartRound
 						or $oBetConfig->getBetTime() === VoetbalOog_BetTime::$nBeforeStartGame
-					)
-					{
-						if ( $this->m_objStartDateTime === null )
+					) {
+						if ($this->m_objStartDateTime === null)
 							$this->m_objStartDateTime = $oRound->getStartDateTime();
 					}
 				}
@@ -318,9 +297,9 @@ class VoetbalOog_Pool extends Agenda_TimeSlot implements VoetbalOog_Pool_Interfa
 	/**
 	 * @see Agenda_TimeSlot_Interface::putStartDateTime()
 	 */
-	public function putStartDateTime( $oDateTime )
+	public function putStartDateTime($oDateTime)
 	{
-		throw new Exception( "Pool::StartDateTime will be determined by the roundbetconfigs of the first round!", E_ERROR );
+		throw new Exception("Pool::StartDateTime will be determined by the roundbetconfigs of the first round!", E_ERROR);
 	}
 
 	/**
@@ -328,53 +307,42 @@ class VoetbalOog_Pool extends Agenda_TimeSlot implements VoetbalOog_Pool_Interfa
 	 */
 	public function getEndDateTime()
 	{
-		if ( $this->m_objEndDateTime === null )
-		{
+		if ($this->m_objEndDateTime === null) {
 			$oRounds = $this->getCompetitionSeason()->getRounds();
 
 			$bHasBetTimeBeforeStartRound = false;
 
 			$arrRounds = $oRounds->getArrayCopy();
-			$oRound = array_pop( $arrRounds );
-			while( $oRound !== null )
-			{
-				$oBetConfigs = $this->getBetConfigs( $oRound );
+			$oRound = array_pop($arrRounds);
+			while ($oRound !== null) {
+				$oBetConfigs = $this->getBetConfigs($oRound);
 
 				$bHasBetTimeBeforeStartPreviousRound = false;
 
-				foreach( $oBetConfigs as $oBetConfig )
-				{
-					if ( $oBetConfig->getBetTime() === VoetbalOog_BetTime::$nBeforeStartGame )
-					{
+				foreach ($oBetConfigs as $oBetConfig) {
+					if ($oBetConfig->getBetTime() === VoetbalOog_BetTime::$nBeforeStartGame) {
 						$this->m_objEndDateTime = $oRound->getEndDateTime();
 						return $this->m_objEndDateTime;
-					}
-					elseif ( $oBetConfig->getBetTime() === VoetbalOog_BetTime::$nBeforeStartRound )
-					{
+					} elseif ($oBetConfig->getBetTime() === VoetbalOog_BetTime::$nBeforeStartRound) {
 						$bHasBetTimeBeforeStartPreviousRound = true;
-					}
-					elseif ( $oBetConfig->getBetTime() === VoetbalOog_BetTime::$nBeforeStartPreviousRound )
-					{
+					} elseif ($oBetConfig->getBetTime() === VoetbalOog_BetTime::$nBeforeStartPreviousRound) {
 						$bHasBetTimeBeforeStartPreviousRound = true;
-					}
-					elseif ( $oBetConfig->getBetTime() === VoetbalOog_BetTime::$nBeforeCompetitionSeason )
-					{
-						if ( $oRound->isFirstRound() === true ) {
+					} elseif ($oBetConfig->getBetTime() === VoetbalOog_BetTime::$nBeforeCompetitionSeason) {
+						if ($oRound->isFirstRound() === true) {
 							$this->m_objEndDateTime = $oRound->getStartDateTime();
 							return $this->m_objEndDateTime;
 						}
 					}
 				}
-				if ( $bHasBetTimeBeforeStartRound === true ) {
+				if ($bHasBetTimeBeforeStartRound === true) {
 					$this->m_objEndDateTime = $oRound->getStartDateTime();
 					return $this->m_objEndDateTime;
-				}
-				else if ( $bHasBetTimeBeforeStartPreviousRound === true ){
+				} else if ($bHasBetTimeBeforeStartPreviousRound === true) {
 					$bHasBetTimeBeforeStartRound = true;
 				}
-                $oRound = array_pop( $arrRounds );
+				$oRound = array_pop($arrRounds);
 			}
-			throw new Exception( "function getLastDeadLine should not be called now", E_ERROR );
+			throw new Exception("function getLastDeadLine should not be called now", E_ERROR);
 		}
 		return $this->m_objEndDateTime;
 	}
@@ -382,8 +350,8 @@ class VoetbalOog_Pool extends Agenda_TimeSlot implements VoetbalOog_Pool_Interfa
 	/**
 	 * @see Agenda_TimeSlot_Interface::putEndDateTime()
 	 */
-	public function putEndDateTime( $oDateTime )
+	public function putEndDateTime($oDateTime)
 	{
-		throw new Exception( "Pool::EndDateTime will be determined by the roundbetconfigs of the last round!", E_ERROR );
+		throw new Exception("Pool::EndDateTime will be determined by the roundbetconfigs of the last round!", E_ERROR);
 	}
 }
