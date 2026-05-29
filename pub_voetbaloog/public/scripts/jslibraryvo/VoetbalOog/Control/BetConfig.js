@@ -190,7 +190,7 @@ function Ctrl_BetConfig()
 
 				for ( var nJ = 1 ; nJ <= 60 ; nJ++ )
 				{
-					if ( nJ <= 6 || ( nJ <= 32 && ( nJ % 2 == 0 || nJ % 5 == 0 ) ) || nJ % 5 == 0 )
+					if ( nJ <= 6 || ( nJ <= 21 && nJ % 3 == 0 ) || ( nJ <= 32 && ( nJ % 2 == 0 || nJ % 5 == 0 ) ) || nJ % 5 == 0 )
 					{
 						sText = nJ;
 						if ( nJ < 10 )
