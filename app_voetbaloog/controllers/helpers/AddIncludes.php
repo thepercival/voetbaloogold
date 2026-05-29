@@ -66,6 +66,9 @@ class VoetbalOog_Helper_AddIncludes extends Zend_Controller_Action_Helper_Abstra
 
 	public function direct()
 	{
+		if ( defined('APPLICATION_ENV') && APPLICATION_ENV === 'production' ) {
+			return '<script src="' . Zend_Registry::get('baseurl') . 'public/scripts/jslibraryvo.min.js"></script>';
+		}
 		return $this->getUnminifiedIncludes();
 	}
 }
