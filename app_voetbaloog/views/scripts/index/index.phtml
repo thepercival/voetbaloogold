@@ -20,7 +20,7 @@
 					<?php endforeach ?>
 					</table>
 				<?php endif ?>
-				<?php if ( $this->oAvailableCompSeason !== null ): ?>
+				<?php if ( $this->oAvailableCompSeason !== null && $this->oUser !== null && $this->oUser->getName() === 'coen' ): ?>
 					<div style="text-align:center;">
 						<a style="padding-top: 10px; padding-bottom: 10px;" href="<?= Zend_Registry::get("baseurl") ?>pool/aanmaken/" class="btn btn-default" role="button">nieuwe pool organiseren</a>
 					</div>
