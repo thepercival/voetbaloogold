@@ -58,6 +58,9 @@ class VoetbalOog_Helper_AddIncludes extends Zend_Controller_Action_Helper_Abstra
 			<script src=\"" . Zend_Registry::get("jslibraryvo") . "VoetbalOog/Control/CompetitionSeasonView.js\" ></script>
 			<script src=\"" . Zend_Registry::get("jslibraryvo") . "VoetbalOog/Control/Payments.js\" ></script>
 			<script src=\"" . Zend_Registry::get("jslibraryvo") . "VoetbalOog/Control/BetConfig.js\" ></script>
+			<script src=\"" . Zend_Registry::get("jslibraryvo") . "VoetbalOog/Control/BetView.js\" ></script>
+			<script src=\"" . Zend_Registry::get("jslibraryvo") . "VoetbalOog/Control/BetHelper.js\" ></script>
+			<script src=\"" . Zend_Registry::get("jslibraryvo") . "VoetbalOog/Control/BetEdit.js\" ></script>
 		";
 	}
 
