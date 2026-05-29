@@ -956,6 +956,8 @@ function Ctrl_BetEdit( oPoolUser, tsNow, sDivId ) {
                     continue;
 
                 var oPoulePlace = oPoulePlaces[nJ];
+                if ( !canResolvePoulePlaceFromPreviousRound( oPoulePlace, oPreviousRoundBetConfig ) )
+                    continue;
 
                 var oQualifiedTeam = getTeamFromQualifyRule( oPoulePlace, oClonedGamesPerPoule, oRanking );
                 if ( oQualifiedTeam == null )
@@ -1034,6 +1036,8 @@ function Ctrl_BetEdit( oPoolUser, tsNow, sDivId ) {
             {
                 if ( !( oPoulePlaces.hasOwnProperty( nJ ) ) ) continue;
                 var oPoulePlace = oPoulePlaces[nJ];
+                if ( !canResolvePoulePlaceFromPreviousRound( oPoulePlace, oPreviousRoundBetConfig ) )
+                    continue;
                 var oQualifiedTeam = getTeamFromQualifyRule( oPoulePlace, oClonedGamesPerPoule, oRanking );
                 if ( oQualifiedTeam == null ) continue;
 
@@ -1192,6 +1196,8 @@ function Ctrl_BetEdit( oPoolUser, tsNow, sDivId ) {
 		var oToQualifyRules = oPoulePlace.getPoule().getRound().getToQualifyRules();
 		refreshOptionsForQualifying( oToQualifyRules, oPoulePlace.getPoule() );
         // end : update next qualifying
+
+        rerenderRoundPaneChain( oPoulePlace.getPoule().getRound().getNext() );
     }
 
     // Handles a change on a qualify radio button.
@@ -1254,6 +1260,8 @@ function Ctrl_BetEdit( oPoolUser, tsNow, sDivId ) {
         // update next qualifying options
         var oToQualifyRules = oPoulePlace.getPoule().getRound().getToQualifyRules();
         refreshOptionsForQualifying( oToQualifyRules, oPoulePlace.getPoule() );
+
+        rerenderRoundPaneChain( oPoulePlace.getPoule().getRound().getNext() );
     }
 
     function propagateQualifyTeamChange( oStartRound, nOldTeamId, nNewTeamId )
@@ -1566,6 +1574,8 @@ function Ctrl_BetEdit( oPoolUser, tsNow, sDivId ) {
                         propagateQualifyTeamChange( oRound, nOldTeamId, nNewTeamId );
                 }
             }
+
+            rerenderRoundPaneChain( oNextRound );
         }
 
         // Auto-update the result hidden input derived from the score.
@@ -1752,6 +1762,29 @@ function Ctrl_BetEdit( oPoolUser, tsNow, sDivId ) {
             oTodoLabel.style.marginLeft = '8px';
         }
         updateTabStates();
+    }
+
+    function rerenderRoundPaneChain( oRound )
+    {
+        while ( oRound != null )
+        {
+            rerenderRoundPane( oRound );
+            oRound = oRound.getNext();
+        }
+    }
+
+    function rerenderRoundPane( oRound )
+    {
+        var oPane = document.getElementById( "betedit-roundnr-" + oRound.getNumber() );
+        if ( oPane == null )
+            return;
+
+        while ( oPane.hasChildNodes() )
+            oPane.removeChild( oPane.lastChild );
+
+        showRound( oPane, oRound );
+        if ( oRound.getNumber() !== 0 )
+            appendTabSaveButton( oPane );
     }
 
     function storePostSaveTab( sPaneId )
@@ -2151,6 +2184,56 @@ function Ctrl_BetEdit( oPoolUser, tsNow, sDivId ) {
         return bSelected;
     }
 
+
+    function canResolvePoulePlaceFromPreviousRound( oPoulePlace, oPreviousRoundBetConfig )
+    {
+        var oQualifyRule = oPoulePlace.getFromQualifyRule();
+        if ( oQualifyRule == null )
+            return false;
+
+        var arrFromPlaces = oQualifyRule.getFromPoulePlaces();
+        var oCheckedPoules = {};
+        for ( var nI = 0; nI < arrFromPlaces.length; nI++ )
+        {
+            var oFromPoule = arrFromPlaces[nI].getPoule();
+            if ( oFromPoule == null )
+                return false;
+
+            var nFromPouleId = oFromPoule.getId();
+            if ( oCheckedPoules[ nFromPouleId ] )
+                continue;
+
+            if ( !isPouleFullyBetted( oFromPoule, oPreviousRoundBetConfig ) )
+                return false;
+
+            oCheckedPoules[ nFromPouleId ] = true;
+        }
+        return true;
+    }
+
+    function isPouleFullyBetted( oPoule, oRoundBetConfig )
+    {
+        var oGames = oPoule.getGames();
+        for ( var nGameId in oGames )
+        {
+            if ( !( oGames.hasOwnProperty( nGameId ) ) )
+                continue;
+
+            var oGame = oGames[nGameId];
+            if ( oRoundBetConfig.getBetType() == VoetbalOog_Bet_Score.nId )
+            {
+                if ( getGoalsBetted( "_homegoals", oRoundBetConfig, oGame ) < 0
+                    || getGoalsBetted( "_awaygoals", oRoundBetConfig, oGame ) < 0 )
+                    return false;
+            }
+            else if ( oRoundBetConfig.getBetType() == VoetbalOog_Bet_Result.nId )
+            {
+                if ( getResultBetted( oRoundBetConfig, oGame ) == -2 )
+                    return false;
+            }
+        }
+        return true;
+    }
 
     /* @TODO oPreviousRoundBetConfig should not be here, check how to remove this */
     function getTeamFromQualifyRule( oPoulePlace, oClonedGamesPerPoule, oRanking )
