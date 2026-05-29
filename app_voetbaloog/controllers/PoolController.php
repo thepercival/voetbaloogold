@@ -392,11 +392,27 @@ class PoolController extends Zend_Controller_Action
 		$this->view->sbetviewcontrolid = "betviewcontrol";
 
 		if ( strlen ( $this->getParam('btnsavebets') ) > 0 ) {
-			$this->view->messagesavebets = $this->_helper->SaveBets( $this->view->sbeteditcontrolid, $this->view->oPoolUser, $this->view->oNow );
-			$this->view->betsactivetabid = "betsedit";
+			$result = $this->_helper->SaveBets( $this->view->sbeteditcontrolid, $this->view->oPoolUser, $this->view->oNow );
+			$sBase = Zend_Registry::get("baseurl") . "pool/voorspellingen/poolid/" . $this->view->oPool->getId() . "/";
+			if ( $result === true ) {
+				$this->redirect( $sBase . "saved/1/" );
+			} else {
+				$this->redirect( $sBase . "saveerror/" . urlencode( $result ) . "/" );
+			}
+			return;
 		}
 		else if ( strlen ( $this->getParam('btncopybets') ) > 0 ) {
 			$this->view->messagecopybets = $this->handleCopyBets( $this->view->oPoolUser );
+			$this->view->betsactivetabid = "betsedit";
+		}
+
+		if ( $this->getParam('saved') === '1' ) {
+			$this->view->messagesavebets = true;
+			$this->view->betsactivetabid = "betsedit";
+		}
+		$sSaveError = $this->getParam('saveerror');
+		if ( strlen( $sSaveError ) > 0 ) {
+			$this->view->messagesavebets = urldecode( $sSaveError );
 			$this->view->betsactivetabid = "betsedit";
 		}
 

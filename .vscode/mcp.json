@@ -1,0 +1,16 @@
+{
+    "servers": {
+        "mysql-voetbaloog": {
+            "type": "stdio",
+            "command": "npx",
+            "args": ["-y", "@benborla29/mcp-server-mysql"],
+            "env": {
+                "MYSQL_HOST": "127.0.0.1",
+                "MYSQL_PORT": "3306",
+                "MYSQL_USER": "coen",
+                "MYSQL_PASSWORD": "cdk4",
+                "MYSQL_DATABASE": "voetbaloog"
+            }
+        }
+    }
+}

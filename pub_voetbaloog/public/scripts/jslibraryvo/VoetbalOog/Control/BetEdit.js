@@ -83,12 +83,10 @@ function Ctrl_BetEdit( oPoolUser, tsNow, sDivId ) {
             var oRound = arrEligibleRounds[nJ];
             var bFirst = (nJ === 0);
             var sRoundId = "betedit-roundnr-" + oRound.getNumber();
-
             var oLi = oNav.appendChild(document.createElement("li"));
             oLi.style.flex = "1";
             oLi.style.textAlign = "center";
             oLi.className = bFirst ? "active" : "disabled";
-
             var oLink = oLi.appendChild(document.createElement("a"));
             oLink.href = "#" + sRoundId;
             oLink.setAttribute("data-toggle", "tab");
@@ -99,12 +97,10 @@ function Ctrl_BetEdit( oPoolUser, tsNow, sDivId ) {
                     e.stopPropagation();
                 }
             });
-
             var oPane = oTabContent.appendChild(document.createElement("div"));
             oPane.id = sRoundId;
             oPane.className = "tab-pane" + (bFirst ? " active" : "");
             oPane.setAttribute("role", "tabpanel");
-
             if (bFirst) {
                 var oFirstRoundBetConfigs = m_oPoolUser.getPool().getBetConfigs(oRound);
                 addBetInfo(oRound, oFirstRoundBetConfigs, oPane);
@@ -242,13 +238,9 @@ function Ctrl_BetEdit( oPoolUser, tsNow, sDivId ) {
         for ( var nJ = 0; nJ < arrPoules.length; nJ++ )
         {
             var oPoule = arrPoules[nJ];
-
-            // per round set
             var nNrOfPoulePlaces = Object_Factory().count(oPoule.getPlaces());
             var bShowGames = nNrOfPoulePlaces > 1;
-
             if (oPoule.needsRanking() == true) {
-                // add extra fieldset
                 var oPouleContainer = oContainer.appendChild(document.createElement("div"));
                 oPouleContainer.style.marginTop = '5px';
                 oPouleContainer.style.textAlign = 'center';
@@ -266,13 +258,7 @@ function Ctrl_BetEdit( oPoolUser, tsNow, sDivId ) {
                 oLink.setAttribute("data-pouleid", oPoule.getId());
                 oLink.setAttribute("aria-expanded", "false");
                 oLink.setAttribute("aria-controls", "collapseRanking" + oPoule.getId());
-                oLink.onclick = function () { // move ranking to well
-                    var nPouleId = this.getAttribute("data-pouleid");
-                    var oWell = document.getElementById("collapseRankingWell" + nPouleId);
-                    if (oWell.hasChildNodes()) { return; }
-                    oWell.appendChild( document.getElementById( getPouleRankingDivId( nPouleId ) ) );
-                };
-
+                oLink.onclick = function () { var nPouleId = this.getAttribute("data-pouleid"); var oWell = document.getElementById("collapseRankingWell" + nPouleId); if (oWell.hasChildNodes()) { return; } oWell.appendChild( document.getElementById( getPouleRankingDivId( nPouleId ) ) ); };
                 var oRankingDiv = oPouleContainer.appendChild(document.createElement('div'));
                 oRankingDiv.className = "collapse";
                 oRankingDiv.id = "collapseRanking" + oPoule.getId();
@@ -280,7 +266,6 @@ function Ctrl_BetEdit( oPoolUser, tsNow, sDivId ) {
                 oRankingWell.id = "collapseRankingWell" + oPoule.getId();
                 oRankingWell.className = "well visible-xs";
                 oRankingWell.setAttribute("data-pouleid", oPoule.getId());
-
                 showPoule(oContainer, oPoule, oRoundBetConfigs);
 
                 if (oRound.getNumber() == 0) {
@@ -296,15 +281,10 @@ function Ctrl_BetEdit( oPoolUser, tsNow, sDivId ) {
                 }
 
                 oTable = null;
-            }
-            else {
+            } else {
                 if (oTable == null) {
-                    //var oDivTable = oContainer.appendChild( document.createElement("div") );
-                    //oDivTable.className = "table-responsive";
-
                     oTable = oContainer.appendChild(document.createElement("table"));
                     oTable.className = m_sTableClassName;
-
                     if (bShowGames == true)
                         showPouleGamesHeaders(oTable, oPoule, oRoundBetConfigs[VoetbalOog_Bet_Qualify.nId] != undefined);
                 }
@@ -315,6 +295,16 @@ function Ctrl_BetEdit( oPoolUser, tsNow, sDivId ) {
                     oTable.style.textAlign = 'center';
                 }
             }
+        }
+
+        // Voeg stand van nummers 3 toe direct onderaan rondenr 0
+        if (oRound.getNumber && oRound.getNumber() === 0) {
+            var oThirdPlaceDiv = oContainer.appendChild(document.createElement('div'));
+            oThirdPlaceDiv.id = 'thirdplace-ranking-' + oRound.getNumber();
+            var oRoundBetConfig3 = oRoundBetConfigs[VoetbalOog_Bet_Score.nId];
+            if (oRoundBetConfig3 == undefined)
+                oRoundBetConfig3 = oRoundBetConfigs[VoetbalOog_Bet_Result.nId];
+            updateThirdPlaceStandings(oRound, oRoundBetConfig3);
         }
 
     }
@@ -400,8 +390,8 @@ function Ctrl_BetEdit( oPoolUser, tsNow, sDivId ) {
                             m_bPreviousCompetitionSeasonsSet = true;
                             m_oBetHelper.show();
                         }).fail(function (jqXHR, textStatus, errorThrown) {
-                            console.log(textStatus);
-                            console.log(jqXHR.responseText);
+                            // console.log(textStatus);
+                            // console.log(jqXHR.responseText);
                         });
                     }
                     else {
@@ -987,6 +977,73 @@ function Ctrl_BetEdit( oPoolUser, tsNow, sDivId ) {
         }
     }
 
+    // Herbereken alle knockout-kwalificaties na elke groepsscore-wijziging
+    function rebuildKnockoutQualifiersFromGroups() {
+        var oPool = m_oPoolUser.getPool();
+        var oCompetitionSeason = oPool.getCompetitionSeason();
+        var oRounds = oCompetitionSeason.getRounds();
+
+        // Zoek ronde 1
+        var oRound1 = null;
+        for (var nRId in oRounds) {
+            if (!oRounds.hasOwnProperty(nRId)) continue;
+            if (oRounds[nRId].getNumber && oRounds[nRId].getNumber() === 1) {
+                oRound1 = oRounds[nRId];
+                break;
+            }
+        }
+
+        // Sla de huidige teamtoewijzingen van ronde 1 op vóór de herbouw
+        var oOldTeamIds = {};
+        var oRBC1 = undefined;
+        var oBets1 = undefined;
+        if (oRound1 != null) {
+            oRBC1 = oPool.getBetConfigs(oRound1)[VoetbalOog_Bet_Qualify.nId];
+            if (oRBC1 != undefined) {
+                oBets1 = m_oPoolUser.getBets(oRBC1);
+                for (var sId in oBets1) {
+                    if (!oBets1.hasOwnProperty(sId)) continue;
+                    var b = oBets1[sId];
+                    if (b != null && b.getTeam() != null)
+                        oOldTeamIds[sId] = b.getTeam().getId();
+                }
+            }
+        }
+
+        // Herbouw qualifier bets (alleen ronde 1 wordt daadwerkelijk bijgewerkt)
+        for (var nRoundId in oRounds) {
+            if (!oRounds.hasOwnProperty(nRoundId)) continue;
+            var oRound = oRounds[nRoundId];
+            if (oRound.getNumber && oRound.getNumber() >= 1) {
+                fillQualifierBetsData(oRound.getId());
+            }
+        }
+
+        // Propageer gewijzigde teamtoewijzingen van ronde 1 naar ronde 2+
+        var bAnyChanged = false;
+        if (oRound1 != null && oRBC1 != undefined && oBets1 != undefined) {
+            for (var sId in oBets1) {
+                if (!oBets1.hasOwnProperty(sId)) continue;
+                var b = oBets1[sId];
+                var nNewId = (b != null && b.getTeam() != null) ? b.getTeam().getId() : null;
+                var nOldId = (oOldTeamIds[sId] != undefined) ? oOldTeamIds[sId] : null;
+                if (nOldId !== nNewId && (nOldId != null || nNewId != null)) {
+                    // console.log('[rebuild] place=' + sId + ' changed: old=' + nOldId + ' → new=' + nNewId);
+                    bAnyChanged = true;
+                    if (nOldId != null) {
+                        propagateQualifyTeamChange(oRound1, nOldId, nNewId);
+                    }
+                }
+            }
+        }
+        // if (!bAnyChanged) console.log('[rebuild] no changes detected in round 1 bets');
+
+        // Rerender alle knockout-tabs zodat UI altijd klopt
+        if (oRound1 != null && bAnyChanged) {
+            rerenderRoundPaneChain(oRound1);
+        }
+    }
+
     // Fills qualifier bets for nRoundId from the previous round's score/result bets.
     // Only updates in-memory data; no DOM interaction.
     // Must be called before rendering so team names are available.
@@ -1039,9 +1096,18 @@ function Ctrl_BetEdit( oPoolUser, tsNow, sDivId ) {
                 if ( !canResolvePoulePlaceFromPreviousRound( oPoulePlace, oPreviousRoundBetConfig ) )
                     continue;
                 var oQualifiedTeam = getTeamFromQualifyRule( oPoulePlace, oClonedGamesPerPoule, oRanking );
-                if ( oQualifiedTeam == null ) continue;
 
                 var oBet = oBets[ oPoulePlace.getId() ];
+                var nOldTeamId = ( oBet != undefined && oBet.getTeam() != null ) ? oBet.getTeam().getId() : null;
+                if ( oQualifiedTeam == null )
+                {
+                    if ( oBet != undefined )
+                    {
+                        propagateQualifyTeamChange( oRound, nOldTeamId, null );
+                        oBet.putTeam( null );
+                    }
+                    continue;
+                }
                 if ( oBet == undefined )
                 {
                     oBet = VoetbalOog_Bet_Factory().createObject( oRoundBetConfig.getBetType() );
@@ -1051,6 +1117,7 @@ function Ctrl_BetEdit( oPoolUser, tsNow, sDivId ) {
                     oBet.putPoulePlace( oPoulePlace );
                     oBets[ oPoulePlace.getId() ] = oBet;
                 }
+                propagateQualifyTeamChange( oRound, nOldTeamId, oQualifiedTeam.getId() );
                 oBet.putTeam( oQualifiedTeam.getId() );
             }
         }
@@ -1197,7 +1264,9 @@ function Ctrl_BetEdit( oPoolUser, tsNow, sDivId ) {
 		refreshOptionsForQualifying( oToQualifyRules, oPoulePlace.getPoule() );
         // end : update next qualifying
 
-        rerenderRoundPaneChain( oPoulePlace.getPoule().getRound().getNext() );
+        // Re-render from this round (not .getNext()) so the hidden inputs in this round's
+        // pane are rebuilt with the updated team before the form is saved.
+        rerenderRoundPaneChain( oPoulePlace.getPoule().getRound() );
     }
 
     // Handles a change on a qualify radio button.
@@ -1230,6 +1299,21 @@ function Ctrl_BetEdit( oPoolUser, tsNow, sDivId ) {
         }
 
         var vtTeamId = parseInt( oRadio.value, 10 );
+
+        // A team can appear in at most one place per round.
+        // If this team is already in a different place in the same round (stale bet),
+        // clear it from there and cascade the removal downstream before setting it here.
+        for ( var sOtherPlaceId in oBets ) {
+            if ( !oBets.hasOwnProperty(sOtherPlaceId) ) continue;
+            if ( sOtherPlaceId === sPoulePlaceId ) continue;
+            var oOtherBet = oBets[sOtherPlaceId];
+            if ( oOtherBet != undefined && oOtherBet.getTeam() != null && oOtherBet.getTeam().getId() === vtTeamId ) {
+                oOtherBet.putTeam( null );
+                propagateQualifyTeamChange( oPoulePlace.getPoule().getRound(), vtTeamId, null );
+                break;
+            }
+        }
+
         oBet.putTeam( vtTeamId );
 
         // Sync the hidden input that carries this slot's bet to the server.
@@ -1261,13 +1345,19 @@ function Ctrl_BetEdit( oPoolUser, tsNow, sDivId ) {
         var oToQualifyRules = oPoulePlace.getPoule().getRound().getToQualifyRules();
         refreshOptionsForQualifying( oToQualifyRules, oPoulePlace.getPoule() );
 
-        rerenderRoundPaneChain( oPoulePlace.getPoule().getRound().getNext() );
+        // Re-render from this round (not .getNext()) so the hidden inputs in this round's
+        // pane are rebuilt with the updated team before the form is saved.
+        rerenderRoundPaneChain( oPoulePlace.getPoule().getRound() );
     }
 
     function propagateQualifyTeamChange( oStartRound, nOldTeamId, nNewTeamId )
     {
-        if ( nOldTeamId == null || nNewTeamId == null || nOldTeamId == nNewTeamId )
+        // console.log('[propagate] start: round=' + oStartRound.getNumber() + ' old=' + nOldTeamId + ' new=' + nNewTeamId);
+        if ( nOldTeamId == null || nOldTeamId == nNewTeamId )
+        {
+            // console.log('[propagate] early return: old==null or old==new');
             return;
+        }
 
         var oPool = m_oPoolUser.getPool();
         var oRound = oStartRound.getNext();
@@ -1277,20 +1367,26 @@ function Ctrl_BetEdit( oPoolUser, tsNow, sDivId ) {
             var oRoundBetConfig = oRoundBetConfigs[ VoetbalOog_Bet_Qualify.nId ];
             if ( oRoundBetConfig == undefined )
             {
+                // console.log('[propagate] round ' + oRound.getNumber() + ': no qualify bet config, skip');
                 oRound = oRound.getNext();
                 continue;
             }
 
             var oBets = m_oPoolUser.getBets( oRoundBetConfig );
+            var nBetsInRound = Object.keys(oBets).length;
+            // console.log('[propagate] round ' + oRound.getNumber() + ': checking ' + nBetsInRound + ' bets for team ' + nOldTeamId);
             for ( var sPoulePlaceId in oBets )
             {
                 if ( !( oBets.hasOwnProperty( sPoulePlaceId ) ) )
                     continue;
 
                 var oBet = oBets[ sPoulePlaceId ];
-                if ( oBet == null || oBet.getTeam() == null || oBet.getTeam().getId() != nOldTeamId )
+                var oTeamInBet = ( oBet != null ) ? oBet.getTeam() : null;
+                var nTeamInBet = ( oTeamInBet != null ) ? oTeamInBet.getId() : null;
+                if ( oBet == null || oTeamInBet == null || nTeamInBet != nOldTeamId )
                     continue;
 
+                // console.log('[propagate] round ' + oRound.getNumber() + ': FOUND team ' + nOldTeamId + ' at place ' + sPoulePlaceId + ' → setting to ' + nNewTeamId);
                 oBet.putTeam( nNewTeamId );
 
                 var oPoulePlace = oBet.getPoulePlace();
@@ -1365,9 +1461,9 @@ function Ctrl_BetEdit( oPoolUser, tsNow, sDivId ) {
                 if ( oHiddenInputs.length > 0 )
                 {
                     for ( var nI = 0; nI < oHiddenInputs.length; nI++ )
-                        oHiddenInputs[nI].value = nNewTeamId;
+                        oHiddenInputs[nI].value = ( nNewTeamId != null ) ? nNewTeamId : "";
                 }
-                else
+                else if ( nNewTeamId != null )
                 {
                     var oNewHidden = document.createElement( "input" );
                     oNewHidden.type = "hidden";
@@ -1555,27 +1651,8 @@ function Ctrl_BetEdit( oPoolUser, tsNow, sDivId ) {
             updateBetsToDo( nDelta, oControl.parentNode, true );
         }
 
-        if ( oRound.getNumber() == 0 && oNextRoundBetConfig != undefined )
-        {
-            fillQualifierBetsData( oNextRound.getId() );
-
-            if ( oPreviousRoundTeams != null )
-            {
-                var oCurrentNextRoundBets = m_oPoolUser.getBets( oNextRoundBetConfig );
-                for ( var sCurrentPoulePlaceId in oCurrentNextRoundBets )
-                {
-                    if ( !( oCurrentNextRoundBets.hasOwnProperty( sCurrentPoulePlaceId ) ) )
-                        continue;
-
-                    var oCurrentBet = oCurrentNextRoundBets[ sCurrentPoulePlaceId ];
-                    var nOldTeamId = oPreviousRoundTeams[ sCurrentPoulePlaceId ];
-                    var nNewTeamId = ( oCurrentBet != null && oCurrentBet.getTeam() != null ) ? oCurrentBet.getTeam().getId() : null;
-                    if ( nOldTeamId != null && nNewTeamId != null && nOldTeamId != nNewTeamId )
-                        propagateQualifyTeamChange( oRound, nOldTeamId, nNewTeamId );
-                }
-            }
-
-            rerenderRoundPaneChain( oNextRound );
+        if ( oRound.getNumber() == 0 ) {
+            rebuildKnockoutQualifiersFromGroups();
         }
 
         // Auto-update the result hidden input derived from the score.
@@ -1718,6 +1795,82 @@ function Ctrl_BetEdit( oPoolUser, tsNow, sDivId ) {
 
         Ctrl_RankView().putQualifierLines( oPoule.getQualifierLines() );
         Ctrl_RankView().show( oContainer, oClonedGames, oPoule.getRound().getCompetitionSeason().getPromotionRule(), {} );
+
+        if ( oPoule.getRound().getNumber() === 0 )
+            updateThirdPlaceStandings( oPoule.getRound(), oRoundBetConfig );
+    }
+
+    function updateThirdPlaceStandings( oRound, oRoundBetConfig )
+    {
+        var oContainer = document.getElementById( 'thirdplace-ranking-' + oRound.getNumber() );
+        if ( oContainer == null )
+            return;
+
+        while ( oContainer.hasChildNodes() )
+            oContainer.removeChild( oContainer.lastChild );
+
+        var oPoules = oRound.getPoules();
+        var arrPoules = [];
+        for ( var nK in oPoules ) {
+            if ( oPoules.hasOwnProperty( nK ) ) arrPoules.push( oPoules[nK] );
+        }
+
+        var oAllGames = {};
+        var oPoulePlaces = {};
+        for ( var nK = 0; nK < arrPoules.length; ++nK ) {
+            var oPoule = arrPoules[nK];
+            var oClonedGames = getClonedGames( oPoule, oRoundBetConfig );
+            for ( var gId in oClonedGames ) {
+                if ( oClonedGames.hasOwnProperty( gId ) ) oAllGames[gId] = oClonedGames[gId];
+            }
+            var ranking = new VoetbalOog_Ranking( oRound.getCompetitionSeason().getPromotionRule() );
+            ranking.updatePoulePlaceRankings( oClonedGames, null );
+            var arrRanked = ranking.getPoulePlacesByRanking( oClonedGames, null );
+            if ( arrRanked.length >= 3 && arrRanked[2] ) {
+                oPoulePlaces[ oPoule.getId() ] = arrRanked[2];
+            }
+        }
+
+        var nCount = 0;
+        for ( var nKc in oPoulePlaces ) { if ( oPoulePlaces.hasOwnProperty( nKc ) ) nCount++; }
+        if ( nCount === 0 )
+            return;
+
+        var crossRanking = new VoetbalOog_Ranking( oRound.getCompetitionSeason().getPromotionRule() );
+        crossRanking.updatePoulePlaceRankings( oAllGames, oPoulePlaces );
+        var arrSorted = crossRanking.getPoulePlacesByRanking( oAllGames, oPoulePlaces );
+
+        var oDiv = oContainer.appendChild( document.createElement('div') );
+        oDiv.style.marginTop = '30px';
+        var oHeader = oDiv.appendChild( document.createElement('h5') );
+        oHeader.style.textAlign = 'center';
+        oHeader.style.fontWeight = 'bold';
+        oHeader.innerHTML = 'Stand nummers 3 (beste nummers 3)';
+        var oTable = document.createElement('table');
+        oTable.className = m_sTableClassName;
+        oDiv.appendChild( oTable );
+        var oRowHeader = oTable.insertRow( oTable.rows.length );
+        oRowHeader.className = 'tableheader';
+        var headers = ['pl', 'team', 'P', 'g', 'p', 'v', 't'];
+        for ( var h = 0; h < headers.length; ++h ) {
+            var oCell = oRowHeader.insertCell( oRowHeader.cells.length );
+            oCell.innerHTML = headers[h];
+            if ( headers[h] === 'team' ) oCell.style.textAlign = 'left';
+            else if ( headers[h] === 'P' ) oCell.style.textAlign = 'center';
+            else oCell.style.textAlign = 'right';
+        }
+        for ( var r = 0; r < arrSorted.length; ++r ) {
+            var oThird = arrSorted[r];
+            var oRow = oTable.insertRow( oTable.rows.length );
+            if ( r === 8 ) oRow.className = 'qualifyline-single';
+            var oCell = oRow.insertCell( oRow.cells.length ); oCell.align = 'right'; oCell.innerHTML = (r + 1);
+            oCell = oRow.insertCell( oRow.cells.length ); oCell.align = 'left'; VoetbalOog_Control_Factory().appendPoulePlace( oCell, oThird, false, false );
+            oCell = oRow.insertCell( oRow.cells.length ); oCell.align = 'center'; oCell.innerHTML = VoetbalOog_Poule_Factory().getName( oThird.getPoule(), false );
+            oCell = oRow.insertCell( oRow.cells.length ); oCell.align = 'right'; oCell.innerHTML = oThird.getNrOfPlayedGames( oAllGames );
+            oCell = oRow.insertCell( oRow.cells.length ); oCell.align = 'right'; oCell.innerHTML = oThird.getPoints( oAllGames ) - oThird.getPenaltyPoints();
+            oCell = oRow.insertCell( oRow.cells.length ); oCell.align = 'right'; oCell.innerHTML = oThird.getNrOfGoalsScored( oAllGames );
+            oCell = oRow.insertCell( oRow.cells.length ); oCell.align = 'right'; oCell.innerHTML = oThird.getNrOfGoalsReceived( oAllGames );
+        }
     }
 
     function updateBetsToDo( nDelta, oDiv, bUpdateTotals )
@@ -1778,6 +1931,17 @@ function Ctrl_BetEdit( oPoolUser, tsNow, sDivId ) {
         var oPane = document.getElementById( "betedit-roundnr-" + oRound.getNumber() );
         if ( oPane == null )
             return;
+
+        // For the first knockout round, qualify-bets are counted in m_nNrOfBetsDone
+        // during rendering (bCountCurrentQualify=true). Subtract the old contribution
+        // before clearing and re-rendering to avoid double-counting.
+        var nRoundNr = oRound.getNumber();
+        if ( nRoundNr !== 0 )
+        {
+            m_nNrOfBetsDone -= ( m_arrBetsDonePerRound[ nRoundNr ] || 0 );
+            m_arrBetsDonePerRound[ nRoundNr ]     = 0;
+            m_arrBetsAvailablePerRound[ nRoundNr ] = 0;
+        }
 
         while ( oPane.hasChildNodes() )
             oPane.removeChild( oPane.lastChild );

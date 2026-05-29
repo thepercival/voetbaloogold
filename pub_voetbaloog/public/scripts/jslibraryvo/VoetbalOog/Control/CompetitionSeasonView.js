@@ -18,16 +18,20 @@ function Ctrl_CompetitionSeasonView( oCompetitionSeason, tsNow, sDivId, jsonOpti
 
 	this.getRoundInProgress = function() { return m_oRoundInProgress; }
 
+
 	this.show = function()
 	{
 		var oRounds = m_oCompetitionSeason.getRounds();
-
+		var oGroupRound = null;
 		for ( var nI in oRounds )
 		{
 			if ( !( oRounds.hasOwnProperty( nI ) ) )
 				continue;
 
 			var oRound = oRounds[nI];
+			if (oRound.getType && oRound.getType() == VoetbalOog_Round.TYPE_GROEPS) {
+				oGroupRound = oRound;
+			}
 
 			var oRoundDiv = getDiv().appendChild( document.createElement("div") );
 			oRoundDiv.id = 'cs-rounddivid-' + oRound.getId();
@@ -36,6 +40,72 @@ function Ctrl_CompetitionSeasonView( oCompetitionSeason, tsNow, sDivId, jsonOpti
 
 			if ( m_oRoundInProgress == null && m_oNow < oRound.getEndDateTime() ) {
 				m_oRoundInProgress = oRound;
+			}
+		}
+
+		// Voeg stand van nummers 3 toe onderaan groepsfase
+		if (oGroupRound) {
+			var arrPoules = oGroupRound.getPoulesAsArray();
+			var arrThirdPlaces = [];
+			for (var i = 0; i < arrPoules.length; ++i) {
+				var oPoule = arrPoules[i];
+				var arrPlaces = oPoule.getPlacesByRank ? oPoule.getPlacesByRank() : [];
+				if (arrPlaces.length >= 3) {
+					var oThird = arrPlaces[2]; // index 2 = nummer 3
+					if (oThird) {
+						arrThirdPlaces.push({
+							poule: oPoule,
+							pouleAbbr: VoetbalOog_Poule_Factory().getName(oPoule, false),
+							poulePlace: oThird
+						});
+					}
+				}
+			}
+			// Sorteer volgens rankingregels
+			arrThirdPlaces.sort(function(a, b) {
+				// Zelfde als in VoetbalOog_Ranking: punten, doelsaldo, goals voor
+				var ptsA = a.poulePlace.getPoints();
+				var ptsB = b.poulePlace.getPoints();
+				if (ptsA != ptsB) return ptsB - ptsA;
+				var gdA = a.poulePlace.getGoalDifference();
+				var gdB = b.poulePlace.getGoalDifference();
+				if (gdA != gdB) return gdB - gdA;
+				var gfA = a.poulePlace.getNrOfGoalsScored();
+				var gfB = b.poulePlace.getNrOfGoalsScored();
+				return gfB - gfA;
+			});
+
+			// Render tabel
+			var oDiv = getDiv().appendChild(document.createElement('div'));
+			oDiv.style.marginTop = '30px';
+			var oHeader = oDiv.appendChild(document.createElement('h5'));
+			oHeader.style.textAlign = 'center';
+			oHeader.style.fontWeight = 'bold';
+			oHeader.innerHTML = 'Stand nummers 3 (beste nummers 3)';
+
+			var oTable = document.createElement('table');
+			oTable.className = m_sTableClassName;
+			oDiv.appendChild(oTable);
+
+			var oRowHeader = oTable.insertRow(oTable.rows.length);
+			oRowHeader.className = 'tableheader';
+			var headers = ['pl', 'team', 'poule', 'g', 'p', 'v', 't'];
+			for (var h = 0; h < headers.length; ++h) {
+				var oCell = oRowHeader.insertCell(oRowHeader.cells.length);
+				oCell.innerHTML = headers[h];
+				if (headers[h] != 'team' && headers[h] != 'poule') oCell.style.textAlign = 'right';
+			}
+
+			for (var r = 0; r < arrThirdPlaces.length; ++r) {
+				var oThird = arrThirdPlaces[r];
+				var oRow = oTable.insertRow(oTable.rows.length);
+				var oCell = oRow.insertCell(oRow.cells.length); oCell.align = 'right'; oCell.innerHTML = (r+1);
+				oCell = oRow.insertCell(oRow.cells.length); oCell.align = 'left'; VoetbalOog_Control_Factory().appendPoulePlace(oCell, oThird.poulePlace, false, true);
+				oCell = oRow.insertCell(oRow.cells.length); oCell.align = 'center'; oCell.innerHTML = oThird.pouleAbbr;
+				oCell = oRow.insertCell(oRow.cells.length); oCell.align = 'right'; oCell.innerHTML = oThird.poulePlace.getNrOfPlayedGames();
+				oCell = oRow.insertCell(oRow.cells.length); oCell.align = 'right'; oCell.innerHTML = oThird.poulePlace.getPoints() - oThird.poulePlace.getPenaltyPoints();
+				oCell = oRow.insertCell(oRow.cells.length); oCell.align = 'right'; oCell.innerHTML = oThird.poulePlace.getNrOfGoalsScored();
+				oCell = oRow.insertCell(oRow.cells.length); oCell.align = 'right'; oCell.innerHTML = oThird.poulePlace.getNrOfGoalsReceived();
 			}
 		}
 	};
