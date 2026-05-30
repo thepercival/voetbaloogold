@@ -16,6 +16,7 @@ function Ctrl_BetEdit( oPoolUser, tsNow, sDivId ) {
     var m_arrBetsAvailablePerRound = {};
     var m_bPrintEnabled = true;
     var m_oJQuery = null;
+    var m_oLoggedThirdPlaceQRs = {};
 
     this.putJQuery = function (oJQuery) {
         m_oJQuery = oJQuery;
@@ -1034,6 +1035,9 @@ function Ctrl_BetEdit( oPoolUser, tsNow, sDivId ) {
         }
 
         // Propageer gewijzigde teamtoewijzingen van ronde 1 naar ronde 2+
+        // Gebruik een atomische batch-update om swap-problemen te voorkomen:
+        // bij sequentieel propageren zou A→B gevolgd door B→A de eerste wijziging ongedaan maken.
+        var oChangeMap = {};
         var bAnyChanged = false;
         if (oRound1 != null && oRBC1 != undefined && oBets1 != undefined) {
             for (var sId in oBets1) {
@@ -1042,18 +1046,34 @@ function Ctrl_BetEdit( oPoolUser, tsNow, sDivId ) {
                 var nNewId = (b != null && b.getTeam() != null) ? b.getTeam().getId() : null;
                 var nOldId = (oOldTeamIds[sId] != undefined) ? oOldTeamIds[sId] : null;
                 if (nOldId !== nNewId && (nOldId != null || nNewId != null)) {
-                    // console.log('[rebuild] place=' + sId + ' changed: old=' + nOldId + ' → new=' + nNewId);
                     bAnyChanged = true;
                     if (nOldId != null) {
-                        propagateQualifyTeamChange(oRound1, nOldId, nNewId);
+                        oChangeMap[nOldId] = nNewId; // nNewId mag null zijn (team verwijderd)
                     }
                 }
             }
         }
-        // if (!bAnyChanged) console.log('[rebuild] no changes detected in round 1 bets');
 
-        // Rerender alle knockout-tabs zodat UI altijd klopt
-        if (oRound1 != null && bAnyChanged) {
+        // Pas alle teamwijzigingen in één pass toe op ronden 2+ (atomisch, geen volgorde-problemen).
+        if (bAnyChanged && oRound1 != null) {
+            var oApplyRound = oRound1.getNext();
+            while (oApplyRound != null) {
+                var oApplyRBC = m_oPoolUser.getPool().getBetConfigs(oApplyRound)[VoetbalOog_Bet_Qualify.nId];
+                if (oApplyRBC != undefined) {
+                    var oApplyBets = m_oPoolUser.getBets(oApplyRBC);
+                    for (var sApplyId in oApplyBets) {
+                        if (!oApplyBets.hasOwnProperty(sApplyId)) continue;
+                        var oApplyBet = oApplyBets[sApplyId];
+                        if (oApplyBet != null && oApplyBet.getTeam() != null) {
+                            var nApplyTeamId = oApplyBet.getTeam().getId();
+                            if (oChangeMap.hasOwnProperty(nApplyTeamId)) {
+                                oApplyBet.putTeam(oChangeMap[nApplyTeamId]);
+                            }
+                        }
+                    }
+                }
+                oApplyRound = oApplyRound.getNext();
+            }
             rerenderRoundPaneChain(oRound1);
         }
     }
@@ -1067,6 +1087,9 @@ function Ctrl_BetEdit( oPoolUser, tsNow, sDivId ) {
         var oCompetitionSeason = oPool.getCompetitionSeason();
         var oRounds = oCompetitionSeason.getRounds();
         var oRound = oRounds[nRoundId];
+
+        if ( oRound.getNumber && oRound.getNumber() === 1 )
+            m_oLoggedThirdPlaceQRs = {};
 
         var oRoundBetConfigs = m_oPoolUser.getPool().getBetConfigs( oRound );
         var oRoundBetConfig = oRoundBetConfigs[ VoetbalOog_Bet_Qualify.nId ];
@@ -1117,7 +1140,6 @@ function Ctrl_BetEdit( oPoolUser, tsNow, sDivId ) {
                 {
                     if ( oBet != undefined )
                     {
-                        propagateQualifyTeamChange( oRound, nOldTeamId, null );
                         oBet.putTeam( null );
                     }
                     continue;
@@ -1131,7 +1153,6 @@ function Ctrl_BetEdit( oPoolUser, tsNow, sDivId ) {
                     oBet.putPoulePlace( oPoulePlace );
                     oBets[ oPoulePlace.getId() ] = oBet;
                 }
-                propagateQualifyTeamChange( oRound, nOldTeamId, oQualifiedTeam.getId() );
                 oBet.putTeam( oQualifiedTeam.getId() );
             }
         }
@@ -2468,10 +2489,6 @@ function Ctrl_BetEdit( oPoolUser, tsNow, sDivId ) {
 
         var arrFromQualifiedPoulePlacesByRank = oRanking.getPoulePlacesByRanking( null, oRankedFromPlaces );
 
-        // for( var nI = 0 ; nI < arrFromQualifiedPoulePlacesByRank.length ; nI++ ) {
-        // console.log( arrFromQualifiedPoulePlacesByRank[nI].Ranking + ' : ' + arrFromQualifiedPoulePlacesByRank[nI].getTeam().getName() );
-        // }
-
         var arrToPlaces = oQualifyRule.getToPoulePlaces();
         var nNrOfToPlaces = arrToPlaces.length;
         var oConfigs = oQualifyRule.getConfig();
@@ -2483,8 +2500,20 @@ function Ctrl_BetEdit( oPoolUser, tsNow, sDivId ) {
         }
 
         var arrConfig = oConfigs[ nTotalRank ];
-        // console.log( nTotalRank );
-        // console.log( arrConfig );
+
+        if ( !m_oLoggedThirdPlaceQRs[ oQualifyRule.getId() ] ) {
+            m_oLoggedThirdPlaceQRs[ oQualifyRule.getId() ] = true;
+            console.group('[3e plaatsen] qualify rule ' + oQualifyRule.getId() + ' — verdeling ' + arrFromQualifiedPoulePlacesByRank.length + ' beste 3e plaatsen');
+            for ( var nLog = 0; nLog < arrFromQualifiedPoulePlacesByRank.length; nLog++ ) {
+                var oPPLog = arrFromQualifiedPoulePlacesByRank[nLog];
+                var sTeamLog = oPPLog.getTeam() ? oPPLog.getTeam().getName() : '(geen team)';
+                var sPouleLog = VoetbalOog_Poule_Factory().getName( oPPLog.getPoule(), true );
+                console.log( '  rank ' + (nLog + 1) + ': ' + sTeamLog + ' (' + sPouleLog + ', poule-macht ' + Math.pow(2, oPPLog.getPoule().getNumber()) + ')' );
+            }
+            console.log( 'nTotalRank = ' + nTotalRank + '  →  config = ' + JSON.stringify(arrConfig) + '  (config-sleutel in oConfigs)' );
+            console.groupEnd();
+        }
+
         var nCount = 1;
         for( var nI = 0 ; nI < arrFromQualifiedPoulePlacesByRank.length ; nI++ ) {
             if ( nCount++ > nNrOfToPlaces ) { break; }
@@ -2494,7 +2523,14 @@ function Ctrl_BetEdit( oPoolUser, tsNow, sDivId ) {
             for( var nK = 0 ; nK < arrToPlaces.length ; nK++ )
             {
                 if ( nJ++ == nIndex && oPoulePlace == arrToPlaces[nK]) {
-                    return arrFromQualifiedPoulePlacesByRank[nI].getTeam();
+                    var oAssignedTeam = arrFromQualifiedPoulePlacesByRank[nI].getTeam();
+                    var sFromPoule = VoetbalOog_Poule_Factory().getName( arrFromQualifiedPoulePlacesByRank[nI].getPoule(), true );
+                    var sToPoule = VoetbalOog_Poule_Factory().getName( oPoulePlace.getPoule(), true );
+                    console.log( '[3e plaats] ' + oAssignedTeam.getName() +
+                        ' (' + sFromPoule + ', rank ' + (nI + 1) + ', poule-macht ' + Math.pow(2, arrFromQualifiedPoulePlacesByRank[nI].getPoule().getNumber()) + ')' +
+                        '  →  config positie ' + nIndex + ' (arrConfig[' + nIndex + '] = ' + arrConfig[nIndex] + ')' +
+                        '  →  bracket: ' + sToPoule + ' plaats ' + oPoulePlace.getNumber() );
+                    return oAssignedTeam;
                 }
             }
         }
