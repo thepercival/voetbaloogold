@@ -131,11 +131,19 @@ function Ctrl_BetEdit( oPoolUser, tsNow, sDivId ) {
                 var sSavedTab = sessionStorage.getItem('betedit_active_tab');
                 if (!sSavedTab) return;
                 sessionStorage.removeItem('betedit_active_tab');
+                var sScrollTarget = sessionStorage.getItem('betedit_scroll_target');
+                sessionStorage.removeItem('betedit_scroll_target');
                 var oTargetLink = document.querySelector('a[href="#' + sSavedTab + '"]');
                 if (!oTargetLink) return;
                 oTargetLink.parentElement.classList.remove('disabled');
                 if (window.jQuery && window.jQuery.fn.tab)
                     window.jQuery(oTargetLink).tab('show');
+                if (sScrollTarget) {
+                    setTimeout(function() {
+                        var oEl = document.getElementById(sScrollTarget);
+                        if (oEl) oEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }, 50);
+                }
             } catch(e) {}
         })();
     };
@@ -277,7 +285,13 @@ function Ctrl_BetEdit( oPoolUser, tsNow, sDivId ) {
                     oSaveButton.className = "btn btn-primary";
                     oSaveButton.name = "btnsavebets";
                     oSaveButton.value = "opslaan";
-                    oSaveButton.onclick = function() { storePostSaveTab( oContainer.id ); };
+                    oSaveButton.id = 'btnsave-poule-' + oPoule.getId();
+                    (function(sBtnId) {
+                        oSaveButton.onclick = function() {
+                            storePostSaveTab( oContainer.id );
+                            try { sessionStorage.setItem('betedit_scroll_target', sBtnId); } catch(e) {}
+                        };
+                    })(oSaveButton.id);
                 }
 
                 oTable = null;

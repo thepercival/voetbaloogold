@@ -6,6 +6,7 @@ apps/configs/config.ini
 library/Voetbal/config.ini
 app_voetbaloog/cache/**
 pub_voetbaloog/public/scripts/jslibraryvo/voetbaloog-min*
+pub_voetbaloog/public/scripts/jslibraryvo.min.js
 pub_voetbaloog/public/scripts/custom.min*
 pub_voetbaloog/public/styles/min-*
 pub_voetbaloog/jslibrary/min*
