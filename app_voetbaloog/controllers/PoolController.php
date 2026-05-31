@@ -46,6 +46,15 @@ class PoolController extends Zend_Controller_Action
 		if ($this->view->emergency === true) {
 			$this->view->oNow = $this->view->oPool->getStartDateTime()->modify('-1 day');
 		}
+		try {
+			$oCfgDebug = new Zend_Config_Ini(APPLICATION_PATH . '/configs/config.ini', 'debug');
+			$sSimulateNow = $oCfgDebug->get('simulate_now', '');
+			if ($sSimulateNow !== '') {
+				$this->view->oNow = Agenda_Factory::createDateTime($sSimulateNow);
+			}
+		} catch (Zend_Config_Exception $e) {
+			// No [debug] section in config; use real time.
+		}
 		$this->view->tsJSNow = $this->view->oNow->getTimeStamp() * 1000;
 		$this->view->oCompetitionSeason = $this->view->oPool->getCompetitionSeason();
 

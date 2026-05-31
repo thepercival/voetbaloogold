@@ -14,13 +14,16 @@ class Voetbal_CompetitieseizoenController extends Zend_Controller_Action
 		$this->view->angular = true;
 
 		$this->view->oCompetitionSeason = Voetbal_CompetitionSeason_Factory::createObjectFromDatabase((int)$this->getParam("id"));
-		if ( $this->view->oCompetitionSeason === null)
+		if ($this->view->oCompetitionSeason === null)
 			return;
 
 		$this->view->subject = $this->getParam("subject");
-		if ($this->view->subject === null)
-			$this->view->subject = "structure";
-		else if ($this->view->subject === "teams"){
+		if ($this->view->subject === null) {
+			if ($this->view->oCompetitionSeason->hasGames())
+				$this->view->subject = "planning";
+			else
+				$this->view->subject = "structure";
+		} else if ($this->view->subject === "teams") {
 			$this->view->oRound = $this->view->oCompetitionSeason->getRounds()->first();
 		}
 
@@ -534,5 +537,3 @@ class Voetbal_CompetitieseizoenController extends Zend_Controller_Action
 		}
 	*/
 }
-
-?>

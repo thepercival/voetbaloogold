@@ -63,6 +63,7 @@
 		<Action><Name>voetbal/competitie/ajax/</Name></Action>
 		<Action><Name>voetbal/competitie/update/</Name></Action>
 		<Action><Name>voetbal/competitieseizoen/index/</Name></Action>
+		<Action><Name>voetbal/competitieseizoen/index/?id=22</Name></Action>
 		<Action><Name>voetbal/extern/api/</Name></Action>
 		<Action><Name>voetbal/import/index/</Name></Action>
 		<Action><Name>voetbal/import/teams/</Name></Action>
@@ -95,6 +96,11 @@
 					<Name>competitie</Name>
 					<Description>competities</Description>
 					<Action><Name>voetbal/competitie/index/</Name></Action>
+				</MenuItem>
+				<MenuItem>
+					<Name>wk2026</Name>
+					<Description>WK 2026</Description>
+					<Action><Name>voetbal/competitieseizoen/index/?id=22</Name></Action>
 				</MenuItem>
 				<MenuItem>
 					<Name>season</Name>
