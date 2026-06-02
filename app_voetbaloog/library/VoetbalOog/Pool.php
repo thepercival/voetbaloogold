@@ -168,8 +168,8 @@ class VoetbalOog_Pool extends Agenda_TimeSlot implements VoetbalOog_Pool_Interfa
 							$nNrOfBets += $oGames->count();
 						}
 					}
-					$this->m_arrNrOfBets[$oRound->getNumber()] = $nNrOfBets;
 				}
+				$this->m_arrNrOfBets[$oRound->getNumber()] = $nNrOfBets;
 			}
 		}
 		if ($oRoundParam === null) {
