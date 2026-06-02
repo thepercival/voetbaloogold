@@ -658,6 +658,37 @@ function Ctrl_BetEdit( oPoolUser, tsNow, sDivId ) {
         return '';
     }
 
+    function styleQualifyRadioLabel( oLabel, oRadio )
+    {
+        oLabel.style.display = 'inline-flex';
+        oLabel.style.alignItems = 'center';
+        oLabel.style.lineHeight = '1.2';
+
+        oRadio.style.marginTop = '0px';
+        oRadio.style.verticalAlign = 'middle';
+        oRadio.style.alignSelf = 'center';
+    }
+
+    function styleKnockoutChoiceLabel( oLabel, oRadio )
+    {
+        oLabel.style.display = 'inline-flex';
+        oLabel.style.alignItems = 'center';
+        oLabel.style.gap = '6px';
+
+        oRadio.style.marginTop = '0px';
+        oRadio.style.verticalAlign = 'middle';
+        oRadio.style.alignSelf = 'center';
+
+        var oTeamWrapper = oLabel.querySelector( 'span' );
+        if ( oTeamWrapper != null )
+        {
+            oTeamWrapper.style.display = 'inline-flex';
+            oTeamWrapper.style.alignItems = 'center';
+            oTeamWrapper.style.lineHeight = '1';
+            oTeamWrapper.style.height = 'auto';
+        }
+    }
+
     // Renders the home, score, and away cells for a knockout-round game row.
     // Home/away cells: btn-style label (icon + team name) with embedded radio.
     // Score cell: always " - "; red background = no bet, green = bet made.
@@ -764,12 +795,14 @@ function Ctrl_BetEdit( oPoolUser, tsNow, sDivId ) {
                     VoetbalOog_Control_Factory().appendTeam( oLabel, oTeam, true, false, false, false );
                     oRadio.style.marginLeft = '6px';
                     oLabel.appendChild( oRadio );
+                    styleKnockoutChoiceLabel( oLabel, oRadio );
                 }
                 else
                 {
                     oRadio.style.marginRight = '6px';
                     oLabel.appendChild( oRadio );
                     VoetbalOog_Control_Factory().appendTeam( oLabel, oTeam, false, false, false, false );
+                    styleKnockoutChoiceLabel( oLabel, oRadio );
                 }
 
                 if ( bIsHome ) oHomeLabel = oLabel;
@@ -858,6 +891,7 @@ function Ctrl_BetEdit( oPoolUser, tsNow, sDivId ) {
             {
                 oCell = oRow.insertCell( oRow.cells.length );
                 oCell.align = "right";
+                oCell.style.verticalAlign = "middle";
                 createPoulePlaceControl( oCell, oGame.getHomePoulePlace(), oRoundBetConfigs, true );
 
                 oCell = oRow.insertCell( oRow.cells.length );
@@ -866,6 +900,7 @@ function Ctrl_BetEdit( oPoolUser, tsNow, sDivId ) {
                 createResultControl( oCell, oGame, oRoundBetConfigs );
 
                 oCell = oRow.insertCell( oRow.cells.length );
+                oCell.style.verticalAlign = "middle";
                 createPoulePlaceControl( oCell, oGame.getAwayPoulePlace(), oRoundBetConfigs, false );
             }
 
@@ -1186,6 +1221,8 @@ function Ctrl_BetEdit( oPoolUser, tsNow, sDivId ) {
             oRadio.type = "radio";
             oRadio.name = sControlId;
             oRadio.value = oTeam.getId();
+
+            styleQualifyRadioLabel( oLabel, oRadio );
 
             if ( oTeamBetted != null && oTeamBetted.getId() == oTeam.getId() )
                 oRadio.checked = true;
@@ -2240,6 +2277,8 @@ function Ctrl_BetEdit( oPoolUser, tsNow, sDivId ) {
 							oRadio.type = "radio";
 							oRadio.name = sControlId;
 							oRadio.value = oTeam.getId();
+
+                            styleQualifyRadioLabel(oLabel, oRadio);
 
 							if (parseInt(oTeam.getId(), 10) == nSelectedTeamId) {
 								oRadio.checked = true;
