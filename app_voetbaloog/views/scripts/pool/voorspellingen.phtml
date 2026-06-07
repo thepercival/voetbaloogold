@@ -18,7 +18,9 @@
 		</div>
 	</div>
 	<div class="col-xs-2" style="padding-right: 0px; text-align: right;">
-		<?php /* tijdelijk uitgezet: print-knop verbergen in alle omgevingen */ ?>
+		<?php if ($this->oUser !== null && $this->oUser->hasRole("superadmin")): ?>
+			<a role="button" href="<?= Zend_Registry::get("baseurl") ?>pool/mijnvoorspellingenpdf/poolid/<?= $this->oPool->getId() ?>/" class="btn btn-default" target="_blank"><span class="glyphicon glyphicon-print"></span></a>
+		<?php endif; ?>
 	</div>
 </div>
 

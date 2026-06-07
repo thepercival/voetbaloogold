@@ -13,12 +13,12 @@
 class Voetbal_Location implements Voetbal_Location_Interface, Patterns_ObservableObject_Interface, Patterns_Idable_Interface
 {
     // Voetbal_Location_Interface
-    protected $m_sName;					// string
-    protected $m_oCompetitionSeason;	// Voetbal_CompetitionSeason
+    protected $m_sName;                    // string
+    protected $m_oCompetitionSeason;    // Voetbal_CompetitionSeason
 
     use Patterns_ObservableObject_Trait, Patterns_Idable_Trait;
 
-    CONST MAX_NAME_LENGTH = 10;
+    const MAX_NAME_LENGTH = 20;
 
     /**
      * @see Voetbal_Location_Interface::getName()
@@ -31,12 +31,11 @@ class Voetbal_Location implements Voetbal_Location_Interface, Patterns_Observabl
     /**
      * @see Voetbal_Location_Interface::putName()
      */
-    public function putName( $sName )
+    public function putName($sName)
     {
-        if ( $this->m_bObserved === true )
-        {
-            $oObjectChange = MetaData_ObjectChange_Factory::createObjectChange( $this->getId(), "Voetbal_Location::Name", $this->m_sName, $sName );
-            $this->notifyObservers( $oObjectChange );
+        if ($this->m_bObserved === true) {
+            $oObjectChange = MetaData_ObjectChange_Factory::createObjectChange($this->getId(), "Voetbal_Location::Name", $this->m_sName, $sName);
+            $this->notifyObservers($oObjectChange);
         }
         $this->m_sName = $sName;
     }
@@ -46,8 +45,8 @@ class Voetbal_Location implements Voetbal_Location_Interface, Patterns_Observabl
      */
     public function getCompetitionSeason()
     {
-        if ( is_int( $this->m_oCompetitionSeason ) )
-            $this->m_oCompetitionSeason = Voetbal_CompetitionSeason_Factory::createObjectFromDatabase( $this->m_oCompetitionSeason );
+        if (is_int($this->m_oCompetitionSeason))
+            $this->m_oCompetitionSeason = Voetbal_CompetitionSeason_Factory::createObjectFromDatabase($this->m_oCompetitionSeason);
 
         return $this->m_oCompetitionSeason;
     }
@@ -55,7 +54,7 @@ class Voetbal_Location implements Voetbal_Location_Interface, Patterns_Observabl
     /**
      * @see Voetbal_Location_Interface::putCompetitionSeason()
      */
-    public function putCompetitionSeason( $oCompetitionSeason )
+    public function putCompetitionSeason($oCompetitionSeason)
     {
         $this->m_oCompetitionSeason = $oCompetitionSeason;
     }
