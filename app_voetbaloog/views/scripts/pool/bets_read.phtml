@@ -1,17 +1,25 @@
-<?php if ( APPLICATION_ENV === "development" ): ?>
-	<script  src="<?= Zend_Registry::get("jslibraryvo") ?>VoetbalOog/Control/BetView.js"></script>
+<?php if (APPLICATION_ENV === "development"): ?>
+	<script src="<?= Zend_Registry::get("jslibraryvo") ?>VoetbalOog/Control/BetView.js"></script>
 <?php endif; ?>
 
 <div id="betsviewheader"></div>
 
 <style>
-#bets-roundnav > li > a { padding: 6px 5px; font-size: 12px; }
-.betsview-right .panel-heading a { outline: none; -webkit-tap-highlight-color: transparent; text-decoration: none; }
+	#bets-roundnav>li>a {
+		padding: 6px 5px;
+		font-size: 12px;
+	}
+
+	.betsview-right .panel-heading a {
+		outline: none;
+		-webkit-tap-highlight-color: transparent;
+		text-decoration: none;
+	}
 </style>
 <ul class="nav nav-tabs" id="bets-roundnav" style="display:flex;flex-wrap:nowrap;margin-bottom:10px;">
 	<?php $oRounds = $this->oCompetitionSeason->getRounds(); ?>
 	<?php $bFirstTab = true; ?>
-	<?php foreach( $oRounds as $oRound ): ?>
+	<?php foreach ($oRounds as $oRound): ?>
 		<li style="flex:1;text-align:center;" class="<?= $bFirstTab ? "active" : "" ?>">
 			<a href="#betsview-roundnr-<?= $oRound->getNumber() ?>" data-toggle="tab"><?= $oRound->getShortName() ?></a>
 		</li>
@@ -22,50 +30,54 @@
 <div class="tab-content betsview-right">
 	<?php $oRounds = $this->oCompetitionSeason->getRounds(); ?>
 	<?php $bFirstPane = true; ?>
-	<?php foreach( $oRounds as $oRound ): ?>
+	<?php foreach ($oRounds as $oRound): ?>
 		<div role="tabpanel" class="tab-pane <?= $bFirstPane ? "active" : "" ?>" id="betsview-roundnr-<?= $oRound->getNumber() ?>">
-			<?php $nBetTypes = $this->oPool->getBetTypes( $oRound ); ?>
+			<?php $nBetTypes = $this->oPool->getBetTypes($oRound); ?>
 			<?php $bFirstPane = false; ?>
-			<?php if ( ( $nBetTypes & VoetbalOog_Bet_Qualify::$nId ) === VoetbalOog_Bet_Qualify::$nId ): ?>
+			<?php if (($nBetTypes & VoetbalOog_Bet_Qualify::$nId) === VoetbalOog_Bet_Qualify::$nId): ?>
 				<div id="betsview-roundnr-<?= $oRound->getNumber() ?>-qualify"></div>
 			<?php endif; ?>
-			<?php if ( ( $nBetTypes & ( VoetbalOog_Bet_Result::$nId + VoetbalOog_Bet_Score::$nId ) ) > 0 ): ?>
+			<?php if (($nBetTypes & (VoetbalOog_Bet_Result::$nId + VoetbalOog_Bet_Score::$nId)) > 0): ?>
 				<div id="betsview-roundnr-<?= $oRound->getNumber() ?>-scoreresult">
-					<?php $oGames = $oRound->getGames( true ); ?>
+					<?php $oGames = $oRound->getGames(true); ?>
 					<?php $this->bAway = true; ?>
 					<div class="panel-group" id="betsview-roundnr-<?= $oRound->getNumber() ?>-scoreresult-accordion" style='margin-bottom: 5px;'>
-					<?php foreach( $oGames as $oGame ): ?>
-						<?php $sId = "betsview-roundnr-".$oRound->getNumber()."-scoreresult-accordion-gamenr-".$oGame->getId(); ?>
-						<div class="panel panel-default" >
-							<div class="panel-heading">
-								<h4 class="panel-title">
-									<a data-toggle="collapse" data-parent="#betsview-roundnr-<?= $oRound->getNumber() ?>-scoreresult-accordion" href="#<?= $sId ?>" style="display:flex;align-items:center;gap:4px;">
-										<span style="min-width:47px;white-space:nowrap;"><?= $oGame->getStartDateTime()->toString("d M") ?></span>
-										<span style="min-width:38px;text-align:right;white-space:nowrap;margin-right:6px;"><?= $oGame->getStartDateTime()->toString("G:i") ?></span>
-										<span style="flex:1;text-align:right;">
-											<?php $this->oPoulePlace = $oGame->getHomePoulePlace(); $this->bAway = false; $this->bAbbreviation = true; ?>
-											<?= $this->render("pouleplace/show.phtml") ?>
-										</span>
-										<span style="min-width:40px;text-align:center;">
-											<?php if ( $oGame->getState() === Voetbal_JSON::$nState_Played ): ?>
-												<?= $oGame->getHomeGoalsCalc() ?> - <?= $oGame->getAwayGoalsCalc() ?>
-											<?php else: ?>
-												-
-											<?php endif; ?>
-										</span>
-										<span style="flex:1;">
-											<?php $this->oPoulePlace = $oGame->getAwayPoulePlace(); $this->bAway = true; $this->bAbbreviation = true; ?>
-											<?= $this->render("pouleplace/show.phtml") ?>
-										</span>
-									</a>
-								</h4>
-							</div>
-							<div id="betsview-roundnr-<?= $oRound->getNumber() ?>-scoreresult-accordion-gamenr-<?= $oGame->getId() ?>" class="panel-collapse collapse">
-								<div id="betsview-roundnr-<?= $oRound->getNumber() ?>-scoreresult-panel-gamenr-<?= $oGame->getId() ?>" class="panel-body">
+						<?php foreach ($oGames as $oGame): ?>
+							<?php $sId = "betsview-roundnr-" . $oRound->getNumber() . "-scoreresult-accordion-gamenr-" . $oGame->getId(); ?>
+							<div class="panel panel-default">
+								<div class="panel-heading">
+									<h4 class="panel-title">
+										<a data-toggle="collapse" data-parent="#betsview-roundnr-<?= $oRound->getNumber() ?>-scoreresult-accordion" href="#<?= $sId ?>" style="display:flex;align-items:center;gap:4px;">
+											<span style="min-width:47px;white-space:nowrap;"><?= $oGame->getStartDateTime()->toString("d M") ?></span>
+											<span style="min-width:38px;text-align:right;white-space:nowrap;margin-right:6px;"><?= $oGame->getStartDateTime()->toString("G:i") ?></span>
+											<span style="flex:1;text-align:right;">
+												<?php $this->oPoulePlace = $oGame->getHomePoulePlace();
+												$this->bAway = false;
+												$this->bAbbreviation = true; ?>
+												<?= $this->render("pouleplace/show.phtml") ?>
+											</span>
+											<span style="min-width:40px;text-align:center;">
+												<?php if ($oGame->getState() === Voetbal_JSON::$nState_Played): ?>
+													<?= $oGame->getHomeGoalsCalc() ?> - <?= $oGame->getAwayGoalsCalc() ?>
+												<?php else: ?>
+													-
+												<?php endif; ?>
+											</span>
+											<span style="flex:1;">
+												<?php $this->oPoulePlace = $oGame->getAwayPoulePlace();
+												$this->bAway = true;
+												$this->bAbbreviation = true; ?>
+												<?= $this->render("pouleplace/show.phtml") ?>
+											</span>
+										</a>
+									</h4>
+								</div>
+								<div id="betsview-roundnr-<?= $oRound->getNumber() ?>-scoreresult-accordion-gamenr-<?= $oGame->getId() ?>" class="panel-collapse collapse">
+									<div id="betsview-roundnr-<?= $oRound->getNumber() ?>-scoreresult-panel-gamenr-<?= $oGame->getId() ?>" class="panel-body">
+									</div>
 								</div>
 							</div>
-						</div>
-					<?php endforeach; ?>
+						<?php endforeach; ?>
 					</div>
 				</div>
 			<?php endif; ?>
