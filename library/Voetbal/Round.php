@@ -75,6 +75,10 @@ class Voetbal_Round extends Agenda_TimeSlot implements Voetbal_Round_Interface
 
 	public function getShortName()
 	{
+		['isPouleRound' => $bIsPouleRound, 'nFromWinning' => $nFromWinning] = $this->computeRoundPosition();
+		if ($bIsPouleRound && $this->getNumber() == 0) return 'poule';
+		if ($nFromWinning == 1) return 'fin';
+		if ($nFromWinning == 0) return '<span class="glyphicon glyphicon-star"></span>';
 		return str_replace(' finale', '', $this->getDisplayName());
 	}
 

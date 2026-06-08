@@ -116,7 +116,10 @@ function VoetbalOog_Round_Factory()
 			,
 			getShortName: function ( oRound )
 			{
-				return this.getName( oRound ).replace(' finale', '');
+				var sName = this.getName( oRound );
+				if ( sName === 'finale' ) return 'fin';
+				if ( sName.indexOf('glyphicon-star') !== -1 ) return sName;
+				return sName.replace(' finale', '');
 			}
 		};
 	})();

@@ -1,30 +1,34 @@
 <?php $this->sHeaderName = "voorspellingen"; ?>
-<?= $this->render("pool/header.phtml") ?>
 
 <div id="page-pool-bets"></div>
 
-<div class="container-fluid">
-	<div class="col-xs-2" style="padding-left: 0px;">
-		<?php if ($this->bShowCopy == true /* and  m_nNrOfBetsDone > 0 */): ?>
-			<a role="button" id="btn-copy-bets" class="btn btn-default"><span class="glyphicon glyphicon-duplicate"></span></a>
+<div class="container-fluid" style="margin-top:6px;margin-bottom:4px;">
+	<div style="display:flex;align-items:center;gap:6px;flex-wrap:nowrap;">
+
+		<?php if ($this->bShowCopy == true): ?>
+			<a role="button" id="btn-copy-bets" class="btn btn-default btn-sm" style="flex-shrink:0;"><span class="glyphicon glyphicon-duplicate"></span></a>
 		<?php endif; ?>
-	</div>
-	<div class="col-xs-8" style="text-align: center">
-		<div style="display: inline-flex; align-items: center; gap: 8px; white-space: nowrap;">
-			<button id="btntogglebetconfig" class="btn btn-info">puntentelling <span class="glyphicon glyphicon-info-sign"></span></button>
+
+		<h2 class="visible-xs" style="margin:0;white-space:nowrap;flex-shrink:0;">voorspellingen</h2>
+
+		<div style="flex:1;"></div>
+
+		<div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
+			<button id="btntogglebetconfig" class="btn btn-info btn-sm">
+				<span class="hidden-xs">puntentelling</span><span class="visible-xs" style="display:inline-block!important">punten</span> <span class="glyphicon glyphicon-info-sign"></span>
+			</button>
 			<?php if ($this->bShowEdit === true): ?>
-				<button type="button" id="betedit-todolabel" class="btn btn-danger" disabled>0 ingevuld</button>
+				<button type="button" id="betedit-todolabel" class="btn btn-danger btn-sm" disabled>0 ingevuld</button>
 			<?php endif; ?>
 		</div>
-	</div>
-	<div class="col-xs-2" style="padding-right: 0px; text-align: right;">
+
 		<?php if ($this->oUser !== null && $this->oUser->hasRole("superadmin")): ?>
-			<a role="button" href="<?= Zend_Registry::get("baseurl") ?>pool/mijnvoorspellingenpdf/poolid/<?= $this->oPool->getId() ?>/" class="btn btn-default" target="_blank"><span class="glyphicon glyphicon-print"></span></a>
+			<a role="button" href="<?= Zend_Registry::get("baseurl") ?>pool/mijnvoorspellingenpdf/poolid/<?= $this->oPool->getId() ?>/" class="btn btn-default btn-sm" target="_blank" style="flex-shrink:0;"><span class="glyphicon glyphicon-print"></span></a>
 		<?php endif; ?>
+
 	</div>
 </div>
-
-<hr>
+<hr style="margin-top:6px;margin-bottom:8px;">
 
 <?php
 $nDataFlag = VoetbalOog_JSON::$nPool_CompetitionSeason; {
