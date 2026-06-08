@@ -3,29 +3,26 @@
 <div id="page-pool-bets"></div>
 
 <div class="container-fluid" style="margin-top:6px;margin-bottom:4px;">
+	<h2 class="visible-xs" style="margin:0;white-space:nowrap;margin-bottom:5px;flex-shrink:0;">voorspellingen</h2>
 	<div style="display:flex;align-items:center;gap:6px;flex-wrap:nowrap;">
+		<?php if ($this->bShowEdit === true): ?>
 
-		<?php if ($this->bShowCopy == true): ?>
-			<a role="button" id="btn-copy-bets" class="btn btn-default btn-sm" style="flex-shrink:0;"><span class="glyphicon glyphicon-duplicate"></span></a>
-		<?php endif; ?>
+			<div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
+				<button id="btntogglebetconfig" class="btn btn-info btn-sm">
+					<span class="hidden-xs">puntentelling</span><span class="visible-xs" style="display:inline-block!important">punten</span> <span class="glyphicon glyphicon-info-sign"></span>
+				</button>
 
-		<h2 class="visible-xs" style="margin:0;white-space:nowrap;flex-shrink:0;">voorspellingen</h2>
-
-		<div style="flex:1;"></div>
-
-		<div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
-			<button id="btntogglebetconfig" class="btn btn-info btn-sm">
-				<span class="hidden-xs">puntentelling</span><span class="visible-xs" style="display:inline-block!important">punten</span> <span class="glyphicon glyphicon-info-sign"></span>
-			</button>
-			<?php if ($this->bShowEdit === true): ?>
 				<button type="button" id="betedit-todolabel" class="btn btn-danger btn-sm" disabled>0 ingevuld</button>
+			</div>
+
+			<?php if ($this->bShowCopy == true): ?>
+				<a role="button" id="btn-copy-bets" class="btn btn-default btn-sm" style="flex-shrink:0;"><span class="glyphicon glyphicon-duplicate"></span></a>
 			<?php endif; ?>
-		</div>
-
-		<?php if ($this->oUser !== null && $this->oUser->hasRole("superadmin")): ?>
-			<a role="button" href="<?= Zend_Registry::get("baseurl") ?>pool/mijnvoorspellingenpdf/poolid/<?= $this->oPool->getId() ?>/" class="btn btn-default btn-sm" target="_blank" style="flex-shrink:0;"><span class="glyphicon glyphicon-print"></span></a>
+		<?php else: ?>
+			<?php if ($this->oUser !== null): ?>
+				<a role="button" href="<?= Zend_Registry::get("baseurl") ?>pool/mijnvoorspellingenpdf/poolid/<?= $this->oPool->getId() ?>/" class="btn btn-default btn-sm" target="_blank" style="flex-shrink:0;"><span class="glyphicon glyphicon-print"></span></a>
+			<?php endif; ?>
 		<?php endif; ?>
-
 	</div>
 </div>
 <hr style="margin-top:6px;margin-bottom:8px;">

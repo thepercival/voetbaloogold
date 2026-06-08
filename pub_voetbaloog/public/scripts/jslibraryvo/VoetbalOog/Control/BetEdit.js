@@ -1983,7 +1983,7 @@ function Ctrl_BetEdit( oPoolUser, tsNow, sDivId ) {
         var oTodoLabel = document.getElementById( 'betedit-todolabel' );
         if ( oTodoLabel != null ) {
             oTodoLabel.innerHTML = m_nNrOfBetsDone + "/" + nAvailableBets + " ingevuld";
-            oTodoLabel.className = ( m_nNrOfBetsDone == nAvailableBets ) ? 'btn btn-success' : 'btn btn-danger';
+            oTodoLabel.className = ( m_nNrOfBetsDone == nAvailableBets ) ? 'btn btn-success btn-sm' : 'btn btn-danger btn-sm';
             oTodoLabel.style.marginLeft = '8px';
         }
         updateTabStates();
