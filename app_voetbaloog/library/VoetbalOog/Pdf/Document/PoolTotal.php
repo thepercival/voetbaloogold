@@ -145,13 +145,13 @@ class VoetbalOog_Pdf_Document_PoolTotal extends Zend_Pdf
 		$this->m_arrColumns = array();
 		$this->m_arrColumns["datum"] = 65;
 		$this->m_arrColumns["tijd"] = 27;
-		$this->m_arrColumns["plaats"] = 60;
+		$this->m_arrColumns["plaats"] = 62;
 		$this->m_arrColumns["p"] = 17;
 		$this->m_arrColumns["thuisploeg"] = 80;
 		$this->m_arrColumns["uitploeg"] = 80;
 		$this->m_arrColumns["uitslag"] = 32;
 
-		$this->m_nWidthLeftColumns = 361; // 65 + 27 + 60 + 17 + 80 + 80 + 32;
+		$this->m_nWidthLeftColumns = 363; // 65 + 27 + 62 + 17 + 80 + 80 + 32;
 	}
 
 	public function getFontHeight()
