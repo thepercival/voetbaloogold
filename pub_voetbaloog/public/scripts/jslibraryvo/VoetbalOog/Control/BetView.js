@@ -333,13 +333,44 @@ function Ctrl_BetView( oPool, oNow ) {
         if ( nRoundNr == null )
             return;
 
-        jQuery('#bets-roundnav a[href="#betsview-roundnr-' + nRoundNr + '"]').tab('show');
+        var oRoundTabLink = jQuery('#bets-roundnav a[href="#betsview-roundnr-' + nRoundNr + '"]');
+        oRoundTabLink.tab('show');
 
         if ( bCollapse && sContainerId != null ) {
-            sContainerId = sContainerId.replace("panel", "accordion");
-            jQuery("#" + sContainerId).collapse('show');
+            var sAccordionId = sContainerId.replace("panel", "accordion");
+            var oAccordion = jQuery("#" + sAccordionId);
+
+            oRoundTabLink.one('shown.bs.tab', function() {
+                oAccordion.collapse('show');
+            });
+
+            oAccordion.one('shown.bs.collapse', function() {
+                scrollToContainer(jQuery, sContainerId);
+            });
+
+            if ( jQuery('#betsview-roundnr-' + nRoundNr).hasClass('active') ) {
+                oAccordion.collapse('show');
+            }
+        } else if ( sContainerId != null ) {
+            oRoundTabLink.one('shown.bs.tab', function() {
+                scrollToContainer(jQuery, sContainerId);
+            });
+
+            if ( jQuery('#betsview-roundnr-' + nRoundNr).hasClass('active') ) {
+                scrollToContainer(jQuery, sContainerId);
+            }
         }
     };
+
+    function scrollToContainer( jQuery, sContainerId )
+    {
+        var oTarget = jQuery("#" + sContainerId);
+        if ( oTarget.length === 0 )
+            return;
+
+        var nTop = oTarget.offset().top - 110;
+        jQuery('html, body').stop(true).animate({ scrollTop: nTop }, 350);
+    }
 
 
 
