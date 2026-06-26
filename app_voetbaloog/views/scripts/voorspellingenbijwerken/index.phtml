@@ -67,7 +67,7 @@ $sStartDateTime = $oStartDateTime->toString( Agenda_DateTime::STR_NICEDATE );
 							</div>
 						</div>
 						<div class="col-xs-offset-3 col-xs-9 col-sm-offset-0 col-sm-4">
-							<?= $this->ShowTime( "gamedatetime", $oStartDateTime ); ?>
+							<?= $this->ShowTime( "gamedatetime", $oStartDateTime, array( 'startHour' => 0 ) ); ?>
 						</div>
 					</div>
 				</div>

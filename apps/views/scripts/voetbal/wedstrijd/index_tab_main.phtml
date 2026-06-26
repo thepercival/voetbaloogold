@@ -197,6 +197,9 @@ if ($oLocations->count() > 0) {
 			<button type="submit" class="btn btn-default" name="btnvalidate" value="submitted">valideren</button>
 		</div>
 	</div>
+	<div class="alert alert-info">
+		<span class="glyphicon glyphicon-info-sign"></span> manual tiebreaker: see .github/copilot-instructions.md
+	</div>
 
 	<input type="hidden" name="id" value="<?= $this->oGame->getId() ?>">
 	<input type="hidden" name="activetabid" value="<?= $this->tabidmain ?>">

@@ -29,3 +29,26 @@ Total bets per pool: **207** (formatType 1, 2026 season).
 
 
  Default active-tab logic on page load: first incomplete round with bets filled, otherwise first empty round, otherwise the last complete round.
+
+## Manual tiebreaker (doManualSorting)
+
+When all ranking criteria are exhausted and two or more teams are still completely equal, a **manual decision** is required (e.g. a drawing of lots by the tournament organization). This must be encoded in `doManualSorting` in **two files**:
+
+| File | Season identifier |
+|------|-------------------|
+| `library/Voetbal/Ranking.php` → `doManualSorting()` | `$seasonName` = `getSeason()->getName()` (e.g. `"2024"`) |
+| `pub_voetbaloog/public/scripts/jslibraryvo/VoetbalOog/Ranking.js` → `doManualSorting()` | `seasonName` = `getCompetitionSeason().getAbbreviation()` (e.g. `'EK 24'`) |
+
+### How to add a new manual tiebreaker
+
+1. Find out the official decision (lots, yellow cards, alphabetical, etc.) and which poule number is affected.
+2. In **both** files, add an `if`-block inside `doManualSorting`:
+   - Check the season name/abbreviation **and** `allFromSamePoule(pouleNr, ...)`.
+   - Sort the collection according to the official decision.
+3. Add a comment explaining **why** the order was chosen (e.g. `// Denmark before Slovenia: fewer yellow cards`).
+
+### Existing cases
+
+| Season | PHP name | JS abbreviation | Poule nr | Decision |
+|--------|----------|-----------------|----------|----------|
+| EK 2024 | `"2024"` | `'EK 24'` | 2 | Denmark before Slovenia — fewer yellow cards (alphabetical sort is a coincidental match) |
