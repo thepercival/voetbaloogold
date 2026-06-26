@@ -2,7 +2,8 @@
 	<script src="<?= Zend_Registry::get("jslibraryvo") ?>VoetbalOog/Control/BetView.js"></script>
 <?php endif; ?>
 <?php
-function betsread_isEliminated($oPoulePlace) {
+function betsread_isEliminated($oPoulePlace)
+{
 	if ($oPoulePlace->getTeam() === null) return false;
 	$oPoule = $oPoulePlace->getPoule();
 	if ($oPoule->getState() !== Voetbal_Factory::STATE_PLAYED) return false;
