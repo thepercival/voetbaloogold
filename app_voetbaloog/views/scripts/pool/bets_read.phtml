@@ -12,8 +12,10 @@ function betsread_isEliminated($oPoulePlace)
 	$oRankedPlaces = $oPoule->getPlacesByRank();
 	$nRank = null;
 	foreach ($oRankedPlaces as $nKey => $oRanked) {
-		if ($oRanked->getTeam() !== null
-			&& $oRanked->getTeam()->getId() === $oPoulePlace->getTeam()->getId()) {
+		if (
+			$oRanked->getTeam() !== null
+			&& $oRanked->getTeam()->getId() === $oPoulePlace->getTeam()->getId()
+		) {
 			$nRank = $nKey;
 			break;
 		}
