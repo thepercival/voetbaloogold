@@ -32,9 +32,7 @@
 $nDataFlag = VoetbalOog_JSON::$nPool_CompetitionSeason; {
 	$nDataFlag += Voetbal_JSON::$nCompetitionSeason_Rounds;
 
-	$oFirstRound = $this->oPool->getCompetitionSeason()->getRounds()->first();
-	if ($oFirstRound !== null and $oFirstRound->getState() === Voetbal_Factory::STATE_PLAYED)
-		$nDataFlag += Voetbal_JSON::$nCompetitionSeason_TeamsInTheRace;
+	$nDataFlag += Voetbal_JSON::$nCompetitionSeason_TeamsInTheRace;
 	$nDataFlag += Voetbal_JSON::$nRound_Poules;
 	$nDataFlag += Voetbal_JSON::$nPoule_Games;
 	$nDataFlag += VoetbalOog_JSON::$nPool_BetConfigs;

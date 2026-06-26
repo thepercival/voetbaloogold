@@ -8,21 +8,37 @@ function betsread_isEliminated($oPoulePlace)
 	$oPoule = $oPoulePlace->getPoule();
 	if ($oPoule->getState() !== Voetbal_Factory::STATE_PLAYED) return false;
 
-	$oToQR = $oPoulePlace->getToQualifyRule();
-	// Position 4: no qualify rule → immediately eliminated
-	if ($oToQR === null) return true;
-
-	// Position 3: multi-poule rule → eliminated only when full round is done AND team not in next round
-	if ($oToQR->getQualifyRule()->getConfigNr() === 1) {
-		$oRound = $oPoule->getRound();
-		if ($oRound->getState() !== Voetbal_Factory::STATE_PLAYED) return false;
-		$oNextRound = $oRound->getCompetitionSeason()->getNextRound($oRound);
-		if ($oNextRound === null) return false;
-		$oNextRoundTeams = $oNextRound->getTeams();
-		$oTeam = $oPoulePlace->getTeam();
-		return ($oNextRoundTeams[$oTeam->getId()] === null);
+	// Find the team's actual rank using game results (initial seedings ≠ ranked positions)
+	$oRankedPlaces = $oPoule->getPlacesByRank();
+	$nRank = null;
+	foreach ($oRankedPlaces as $nKey => $oRanked) {
+		if ($oRanked->getTeam() !== null
+			&& $oRanked->getTeam()->getId() === $oPoulePlace->getTeam()->getId()) {
+			$nRank = $nKey;
+			break;
+		}
 	}
+	if ($nRank === null) return false;
 
+	// Find the designated poule place for this rank (Number = rank - 1) and check its qualify rule
+	foreach ($oPoule->getPlaces() as $oPlace) {
+		if ($oPlace->getNumber() === $nRank - 1) {
+			$oToQR = $oPlace->getToQualifyRule();
+			if ($oToQR === null) return true; // rank 4: immediately eliminated
+
+			// Rank 3 with multi-poule rule: eliminated only when full round is done AND not in next round
+			if ($oToQR->getQualifyRule()->getConfigNr() === 1) {
+				$oRound = $oPoule->getRound();
+				if ($oRound->getState() !== Voetbal_Factory::STATE_PLAYED) return false;
+				$oNextRound = $oRound->getCompetitionSeason()->getNextRound($oRound);
+				if ($oNextRound === null) return false;
+				$oNextRoundTeams = $oNextRound->getTeams();
+				$oTeam = $oPoulePlace->getTeam();
+				return ($oNextRoundTeams[$oTeam->getId()] === null);
+			}
+			return false;
+		}
+	}
 	return false;
 }
 ?>
