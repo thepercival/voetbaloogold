@@ -109,7 +109,7 @@ class Zend_View_Helper_ShowAllTimes
 			foreach ($arrNrOfWins as $sCSWin)
 				$sNameTotal .= "<span class=\"glyphicon glyphicon-star\" title=\"" . $sCSWin . "\"></span>";
 			$sClassName = $this->m_sRowClassPrefix . $nUserId;
-			$sHtml .= "<tr class=\"" . $sClassName . "\"><td style='position:sticky;left:0;z-index:1;background:#fff;'>" . $sNameTotal . "</td>";
+			$sHtml .= "<tr class=\"" . $sClassName . "\"><td class='pooluser-name' style='position:sticky;left:0;z-index:1;background:#fff;'>" . $sNameTotal . "</td>";
 
 			$arrAllTimeRankUser = $arrAllTimeRankUsers[$nUserId];
 			foreach ($oCompetitionSeasons as $oCompetitionSeason) {

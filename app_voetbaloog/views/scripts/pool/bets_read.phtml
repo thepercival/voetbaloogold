@@ -1,6 +1,30 @@
 <?php if (APPLICATION_ENV === "development"): ?>
 	<script src="<?= Zend_Registry::get("jslibraryvo") ?>VoetbalOog/Control/BetView.js"></script>
 <?php endif; ?>
+<?php
+function betsread_isEliminated($oPoulePlace) {
+	if ($oPoulePlace->getTeam() === null) return false;
+	$oPoule = $oPoulePlace->getPoule();
+	if ($oPoule->getState() !== Voetbal_Factory::STATE_PLAYED) return false;
+
+	$oToQR = $oPoulePlace->getToQualifyRule();
+	// Position 4: no qualify rule → immediately eliminated
+	if ($oToQR === null) return true;
+
+	// Position 3: multi-poule rule → eliminated only when full round is done AND team not in next round
+	if ($oToQR->getQualifyRule()->getConfigNr() === 1) {
+		$oRound = $oPoule->getRound();
+		if ($oRound->getState() !== Voetbal_Factory::STATE_PLAYED) return false;
+		$oNextRound = $oRound->getCompetitionSeason()->getNextRound($oRound);
+		if ($oNextRound === null) return false;
+		$oNextRoundTeams = $oNextRound->getTeams();
+		$oTeam = $oPoulePlace->getTeam();
+		return ($oNextRoundTeams[$oTeam->getId()] === null);
+	}
+
+	return false;
+}
+?>
 
 <div id="betsviewheader"></div>
 
@@ -50,7 +74,7 @@
 										<a data-toggle="collapse" data-parent="#betsview-roundnr-<?= $oRound->getNumber() ?>-scoreresult-accordion" href="#<?= $sId ?>" style="display:flex;align-items:center;gap:4px;">
 											<span style="min-width:47px;white-space:nowrap;"><?= $oGame->getStartDateTime()->toString("d M") ?></span>
 											<span style="min-width:38px;text-align:right;white-space:nowrap;margin-right:6px;"><?= $oGame->getStartDateTime()->toString("G:i") ?></span>
-											<span style="flex:1;text-align:right;">
+											<span style="flex:1;text-align:right;" <?= betsread_isEliminated($oGame->getHomePoulePlace()) ? 'class="text-danger"' : '' ?>>
 												<?php $this->oPoulePlace = $oGame->getHomePoulePlace();
 												$this->bAway = false;
 												$this->bAbbreviation = true; ?>
@@ -63,7 +87,7 @@
 													-
 												<?php endif; ?>
 											</span>
-											<span style="flex:1;">
+											<span style="flex:1;" <?= betsread_isEliminated($oGame->getAwayPoulePlace()) ? 'class="text-danger"' : '' ?>>
 												<?php $this->oPoulePlace = $oGame->getAwayPoulePlace();
 												$this->bAway = true;
 												$this->bAbbreviation = true; ?>
@@ -83,4 +107,22 @@
 			<?php endif; ?>
 		</div>
 	<?php endforeach; ?>
+</div>
+
+<!-- TeamBettorsModal -->
+<div class="modal fade" id="teambettorsModal" tabindex="-1" role="dialog" aria-labelledby="teambettorsModalLabel">
+	<div class="modal-dialog modal-sm">
+		<div class="modal-content">
+			<div class="modal-header">
+				<button type="button" class="close" data-dismiss="modal">&times;</button>
+				<span class="modal-title" id="teambettorsModalLabel">zelfde voorspellingen</span>
+			</div>
+			<div class="modal-body">
+				<div id="teambettors-modal-body"></div>
+			</div>
+			<div class="modal-footer">
+				<button type="button" class="btn btn-default" data-dismiss="modal">sluit</button>
+			</div>
+		</div>
+	</div>
 </div>

@@ -135,8 +135,12 @@ nav.header.navbar-non-production {
 	background-color: black;
 }
 
-div.everyonebetted {
-	background-color: #ccc;
+.everyonebetted {
+	background-color: #ccc !important;
+}
+
+td.pooluser-current {
+	font-weight: bold;
 }
 
 @media (max-width: 767px) {

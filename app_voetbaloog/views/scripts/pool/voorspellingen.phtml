@@ -3,26 +3,27 @@
 <div id="page-pool-bets"></div>
 
 <div class="container-fluid" style="margin-top:6px;margin-bottom:4px;">
-	<h2 class="visible-xs" style="margin:0;white-space:nowrap;margin-bottom:5px;flex-shrink:0;">voorspellingen</h2>
-	<div style="display:flex;align-items:center;gap:6px;flex-wrap:nowrap;">
-		<?php if ($this->bShowEdit === true): ?>
+	<div style="display:flex;align-items:end">
+		<h2 class="visible-xs" style="margin:0;white-space:nowrap;margin-bottom:5px;flex-shrink:0;">voorspellingen</h2>
+		<div style="display:flex;width:100%;align-items:end;gap:6px;flex-wrap:nowrap;">
+			<?php if ($this->bShowEdit === true): ?>
+				<div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
+					<button type="button" id="betedit-todolabel" class="btn btn-danger btn-sm" disabled>0 ingevuld</button>
+				</div>
 
-			<div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
-				<button id="btntogglebetconfig" class="btn btn-info btn-sm">
-					<span class="hidden-xs">puntentelling</span><span class="visible-xs" style="display:inline-block!important">punten</span> <span class="glyphicon glyphicon-info-sign"></span>
-				</button>
-
-				<button type="button" id="betedit-todolabel" class="btn btn-danger btn-sm" disabled>0 ingevuld</button>
-			</div>
-
-			<?php if ($this->bShowCopy == true): ?>
-				<a role="button" id="btn-copy-bets" class="btn btn-default btn-sm" style="flex-shrink:0;"><span class="glyphicon glyphicon-duplicate"></span></a>
+				<?php if ($this->bShowCopy == true): ?>
+					<a role="button" id="btn-copy-bets" class="btn btn-default btn-sm" style="flex-shrink:0;"><span class="glyphicon glyphicon-duplicate"></span></a>
+				<?php endif; ?>
+			<?php else: ?>
+				<?php if ($this->oUser !== null): ?>
+					<a role="button" href="<?= Zend_Registry::get("baseurl") ?>pool/mijnvoorspellingenpdf/poolid/<?= $this->oPool->getId() ?>/" class="btn btn-default btn-sm hidden-xs" target="_blank" style="flex-shrink:0;"><span class="glyphicon glyphicon-print"></span></a>
+				<?php endif; ?>
 			<?php endif; ?>
-		<?php else: ?>
-			<?php if ($this->oUser !== null): ?>
-				<a role="button" href="<?= Zend_Registry::get("baseurl") ?>pool/mijnvoorspellingenpdf/poolid/<?= $this->oPool->getId() ?>/" class="btn btn-default btn-sm" target="_blank" style="flex-shrink:0;"><span class="glyphicon glyphicon-print"></span></a>
-			<?php endif; ?>
-		<?php endif; ?>
+			<button id="btntogglebetconfig" class="btn btn-info btn-sm" style="margin-left:auto">
+				<span class="hidden-xs">puntentelling</span><span class="visible-xs" style="display:inline-block!important">punten</span> <span class="glyphicon glyphicon-info-sign"></span>
+			</button>
+			<button id="btn-thirdplace-ranking" class="btn btn-default btn-sm" style="margin-left:auto;flex-shrink:0;" title="Stand nummers 3">3<sup>e</sup> <span class="glyphicon glyphicon-stats"></span></button>
+		</div>
 	</div>
 </div>
 <hr style="margin-top:6px;margin-bottom:8px;">
@@ -66,6 +67,24 @@ $jsonPool = json_encode(json_decode(VoetbalOog_Pool_Factory::convertObjectToJSON
 		<p class="alert-link">je kan nog geen voorspellingen bekijken.</p>
 	</div>
 <?php endif; ?>
+
+<!-- ThirdPlaceModal -->
+<div class="modal fade" id="thirdplaceModal" tabindex="-1" role="dialog" aria-labelledby="thirdplaceModalLabel" aria-hidden="true">
+	<div class="modal-dialog">
+		<div class="modal-content">
+			<div class="modal-header">
+				<button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+				<span class="modal-title" id="thirdplaceModalLabel" style="font-size:18px;">Stand nummers 3</span>
+			</div>
+			<div class="modal-body">
+				<div id="thirdplace-ranking-modal"></div>
+			</div>
+			<div class="modal-footer">
+				<button type="button" class="btn btn-default" data-dismiss="modal">sluit</button>
+			</div>
+		</div>
+	</div>
+</div>
 
 <!-- PointsModal -->
 <div class="modal fade" id="pointsModal" tabindex="-1" role="dialog" aria-labelledby="pointModalLabel" aria-hidden="true">

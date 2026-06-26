@@ -50,6 +50,39 @@ function Ctrl_BetView( oPool, oNow ) {
                 m_jsonNavigateTo = { "containerid" : sContainerId, "roundnr" : oRound.getNumber() };
             }
 
+            var myBetDescription = null;
+            var bMyScoreCorrect = false;
+            var bMyResultCorrect = false;
+            var myPoolUser = (typeof g_nPoolUserId !== 'undefined' && g_nPoolUserId != null)
+                ? m_oPool.getUsers()[g_nPoolUserId] : null;
+            if (myPoolUser != null) {
+                var myBets, myBet;
+                if (oBetConfigScore != undefined) {
+                    myBets = myPoolUser.getBets(oBetConfigScore);
+                    myBet = myBets ? myBets[oGame.getId()] : null;
+                    if (myBet != null) {
+                        myBetDescription = myBet.getHomeGoals() + " - " + myBet.getAwayGoals();
+                        if (myBet.getCorrect() == true) bMyScoreCorrect = true;
+                    }
+                }
+                if (oBetConfigResult != undefined) {
+                    myBets = myPoolUser.getBets(oBetConfigResult);
+                    myBet = myBets ? myBets[oGame.getId()] : null;
+                    if (myBet != null) {
+                        if (oBetConfigScore == undefined)
+                            myBetDescription = VoetbalOog_Bet_Factory().getResultDescription(myBet.getResult());
+                        if (myBet.getCorrect() == true) bMyResultCorrect = true;
+                    }
+                }
+            }
+            if (bMyScoreCorrect || bMyResultCorrect) {
+                var oPanelDiv = oContainer.parentElement && oContainer.parentElement.parentElement;
+                if (oPanelDiv && oPanelDiv.classList) {
+                    oPanelDiv.classList.remove('panel-default');
+                    oPanelDiv.classList.add(bMyScoreCorrect ? 'panel-success' : 'panel-warning');
+                }
+            }
+
             var oTable = oContainer.appendChild(document.createElement("table"));
             oTable.className = "table table-striped table-betview-scoreselect"; // hidden
 
@@ -66,6 +99,8 @@ function Ctrl_BetView( oPool, oNow ) {
                 oCell.appendChild(document.createTextNode(oPoolUser.getRanking()));
 
                 oCell = oRow.insertCell(oRow.cells.length);
+                if (oPoolUser.getId() == g_nPoolUserId)
+                    oCell.className = 'pooluser-current';
                 oCell.appendChild(document.createTextNode(oPoolUser.getUser().getName()));
 
                 oCell = oRow.insertCell(oRow.cells.length);
@@ -103,6 +138,10 @@ function Ctrl_BetView( oPool, oNow ) {
 
                 oCell.className = sClassName;
                 oCell.appendChild(document.createTextNode(sDescription));
+                if (myBetDescription !== null && sDescription === myBetDescription
+                        && oPoolUser.getId() != g_nPoolUserId) {
+                    oRow.cells[0].className = 'info';
+                }
 
                 if (oGame.getState() == g_jsonVoetbal.nState_Played) {
                     oCell = oRow.insertCell(oRow.cells.length);
@@ -197,7 +236,7 @@ function Ctrl_BetView( oPool, oNow ) {
             oCell.appendChild(document.createTextNode(oPoolUser.getRanking()));
 
             oCell = oRow.insertCell(oRow.cells.length);
-            oCell.className = "betview-poolusername-xs"
+            oCell.className = "betview-poolusername-xs" + (oPoolUser.getId() == g_nPoolUserId ? ' pooluser-current' : '');
             oCell.appendChild(document.createTextNode(oPoolUser.getUser().getName())); // pooluser
 
             var oCell = document.createElement("td");
@@ -237,6 +276,8 @@ function Ctrl_BetView( oPool, oNow ) {
                             sClassName += " everyonebetted";
 
                         oDiv.setAttribute("data-teamid", oBet.getTeam().getId() );
+                        oDiv.setAttribute("data-pouleplid", oPoulePlace.getId());
+                        oDiv.setAttribute("data-roundnr", oRound.getNumber());
                         VoetbalOog_Control_Factory().appendTeam( oDiv, oBet.getTeam(), false, true, false, true);
                     }
                     else

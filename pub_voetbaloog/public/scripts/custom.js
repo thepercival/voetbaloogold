@@ -14,8 +14,9 @@ jQuery(document).ready(function ($) {
 	if ($('#page-pool-stand').length || $('#page-pool-stand-allertijden').length || $('#page-pool-bets').length ) {
 		// highlight all rows with table class pu-highlight and row class pu-?
 		function changeCurrentUserRows(nUserId) {
-			$("table.pu-highlight tr.pu-" + nUserId).addClass('success');
-			$("table.pu-highlight").removeClass('pu-highlight');
+			$('table.pu-highlight tr.pu-' + nUserId).addClass('success');
+			$('table.pu-highlight tr.pu-' + nUserId + ' td.pooluser-name').addClass('pooluser-current');
+			$('table.pu-highlight').removeClass('pu-highlight');
 		}
 	}
 
@@ -41,9 +42,13 @@ jQuery(document).ready(function ($) {
                     );
             });
         }
+		if (g_nUserId != null)
+			changeCurrentUserRows(g_nUserId);
 	}
 
 	if ($('#page-pool-stand-allertijden').length) {
+		if (g_nUserId != null)
+			changeCurrentUserRows(g_nUserId);
 		$(document).on( "click", '.btn-show-records', function(){
 			showRecords( $( this).data("type") == "pos" );
 		});
@@ -128,8 +133,113 @@ jQuery(document).ready(function ($) {
 			$('.betsview-right div[data-teamid]').click(function (e) {
 				$('.betsview-right div[data-teamid]').removeClass( "teamselected" );
 				$('.betsview-right div[data-teamid="'+ $(this).data("teamid")+'"]').addClass( "teamselected" );
+
+				if (!$(this).hasClass('everyonebetted')) {
+					var nTeamId = $(this).data('teamid');
+					var nPoulePlId = $(this).data('pouleplid');
+					var nRoundNr = $(this).data('roundnr');
+					if (nPoulePlId != null && nRoundNr != null) {
+						var bIncludeLoggedIn = $(this).hasClass('bg-success');
+						populateTeamBettorsModal(nTeamId, nPoulePlId, nRoundNr, bIncludeLoggedIn);
+						$('#teambettorsModal').modal({});
+					}
+				}
 			});
 		}
+
+		function populateTeamBettorsModal(nTeamId, nPoulePlId, nRoundNr, bIncludeLoggedIn) {
+			var oContainer = document.getElementById('teambettors-modal-body');
+			if (oContainer == null) return;
+
+			while (oContainer.hasChildNodes())
+				oContainer.removeChild(oContainer.lastChild);
+
+			var oBetConfigQualify = null;
+			var oRounds = g_oPool.getCompetitionSeason().getRounds();
+			for (var nI in oRounds) {
+				if (!oRounds.hasOwnProperty(nI)) continue;
+				if (oRounds[nI].getNumber() == nRoundNr) {
+					var oBetConfigs = g_oPool.getBetConfigs(oRounds[nI]);
+					oBetConfigQualify = oBetConfigs[VoetbalOog_Bet_Qualify.nId];
+					break;
+				}
+			}
+			if (oBetConfigQualify == null) return;
+
+			var oPoolUsers = g_oPool.getUsers(true);
+
+			// Bereken correcte competitierang (1,1,3 bij gelijke punten) op basis van getPoints()
+			var oRankById = {};
+			var nCompRank = 1;
+			for (var k = 0; k < oPoolUsers.length; k++) {
+				if (k > 0 && oPoolUsers[k].getPoints() !== oPoolUsers[k - 1].getPoints())
+					nCompRank = k + 1;
+				oRankById[oPoolUsers[k].getId()] = nCompRank;
+			}
+
+			// Toon het land met vlag bovenaan de modal body
+			var oTeam = null;
+			for (var nI in oPoolUsers) {
+				if (!oPoolUsers.hasOwnProperty(nI)) continue;
+				var oBets0 = oPoolUsers[nI].getBets(oBetConfigQualify);
+				var oBet0 = oBets0 ? oBets0[nPoulePlId] : null;
+				if (oBet0 != null && oBet0.getTeam() != null && oBet0.getTeam().getId() == nTeamId) {
+					oTeam = oBet0.getTeam();
+					break;
+				}
+			}
+			if (oTeam != null) {
+				var oTeamDiv = oContainer.appendChild(document.createElement('div'));
+				oTeamDiv.style.marginBottom = '10px';
+				VoetbalOog_Control_Factory().appendTeam(oTeamDiv, oTeam, false, false, false, false);
+			}
+
+			var oTable = oContainer.appendChild(document.createElement('table'));
+			oTable.className = 'table table-condensed';
+
+			var bAny = false;
+			for (var nI in oPoolUsers) {
+				if (!oPoolUsers.hasOwnProperty(nI)) continue;
+				var oPoolUser = oPoolUsers[nI];
+				if (!bIncludeLoggedIn && oPoolUser.getId() == g_nPoolUserId) continue; // ingelogde gebruiker overslaan tenzij gekwalificeerd
+				var oBets = oPoolUser.getBets(oBetConfigQualify);
+				var oBet = oBets ? oBets[nPoulePlId] : null;
+				if (oBet == null || oBet.getTeam() == null || oBet.getTeam().getId() != nTeamId) continue;
+
+				var oRow = oTable.insertRow(oTable.rows.length);
+				var oCell = oRow.insertCell(0);
+				oCell.style.textAlign = 'right';
+				oCell.style.width = '20px';
+				oCell.appendChild(document.createTextNode(oRankById[oPoolUser.getId()]));
+				oCell = oRow.insertCell(1);
+				if (oPoolUser.getId() == g_nPoolUserId)
+					oCell.className = 'pooluser-current';
+				oCell.appendChild(document.createTextNode(oPoolUser.getUser().getName()));
+				bAny = true;
+			}
+
+			if (!bAny) {
+				var oP = oContainer.appendChild(document.createElement('p'));
+				oP.appendChild(document.createTextNode('Niemand'));
+			}
+		}
+
+		$('#btn-thirdplace-ranking').click(function() {
+			$('#thirdplaceModal').modal({});
+
+			var oContainer = document.getElementById('thirdplace-ranking-modal');
+			if ( oContainer == null ) return;
+
+			var oControl = g_oRankableControl;
+			if ( oControl == null || typeof oControl.showThirdPlaceRanking !== 'function' ) {
+				if ( g_oPoolUser != null ) {
+					oControl = new Ctrl_BetEdit( g_oPoolUser, g_oNow, '' );
+					oControl.putJQuery( $ );
+				}
+			}
+			if ( oControl != null )
+				oControl.showThirdPlaceRanking( oContainer );
+		});
 
 		if ( g_bBetsEditable == true || g_bBetsReadable == true )
 		{

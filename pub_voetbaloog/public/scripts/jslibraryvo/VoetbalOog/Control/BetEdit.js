@@ -978,7 +978,7 @@ function Ctrl_BetEdit( oPoolUser, tsNow, sDivId ) {
                 if (!( oFromPoules.hasOwnProperty(nI) ))
                     continue;
                 var oFromPoule = oFromPoules[nI];
-                oClonedGamesPerPoule[ oFromPoule.getId() ] = getClonedGames( oFromPoule, oPreviousRoundBetConfig);
+                oClonedGamesPerPoule[ oFromPoule.getId() ] = getClonedGamesFromUserBets( oFromPoule, oPreviousRoundBetConfig);
             }
         }
 
@@ -1151,7 +1151,7 @@ function Ctrl_BetEdit( oPoolUser, tsNow, sDivId ) {
             for ( var nI in oFromPoules ) {
                 if (!( oFromPoules.hasOwnProperty(nI) )) continue;
                 var oFromPoule = oFromPoules[nI];
-                oClonedGamesPerPoule[ oFromPoule.getId() ] = getClonedGames( oFromPoule, oPreviousRoundBetConfig );
+                oClonedGamesPerPoule[ oFromPoule.getId() ] = getClonedGamesFromUserBets( oFromPoule, oPreviousRoundBetConfig );
             }
         }
 
@@ -1863,7 +1863,7 @@ function Ctrl_BetEdit( oPoolUser, tsNow, sDivId ) {
         if ( oContainer == null )
             return;
 
-        var oClonedGames = getClonedGames( oPoule, oRoundBetConfig );
+        var oClonedGames = getClonedGamesFromUserBets( oPoule, oRoundBetConfig );
 
         Ctrl_RankView().putQualifierLines( oPoule.getQualifierLines() );
         Ctrl_RankView().show( oContainer, oClonedGames, oPoule.getRound().getCompetitionSeason().getPromotionRule(), {} );
@@ -1872,9 +1872,10 @@ function Ctrl_BetEdit( oPoolUser, tsNow, sDivId ) {
             updateThirdPlaceStandings( oPoule.getRound(), oRoundBetConfig );
     }
 
-    function updateThirdPlaceStandings( oRound, oRoundBetConfig )
+    function updateThirdPlaceStandings( oRound, oRoundBetConfig, oContainer, bUseRealScores )
     {
-        var oContainer = document.getElementById( 'thirdplace-ranking-' + oRound.getNumber() );
+        if ( oContainer == null )
+            oContainer = document.getElementById( 'thirdplace-ranking-' + oRound.getNumber() );
         if ( oContainer == null )
             return;
 
@@ -1891,13 +1892,13 @@ function Ctrl_BetEdit( oPoolUser, tsNow, sDivId ) {
         var oPoulePlaces = {};
         for ( var nK = 0; nK < arrPoules.length; ++nK ) {
             var oPoule = arrPoules[nK];
-            var oClonedGames = getClonedGames( oPoule, oRoundBetConfig );
-            for ( var gId in oClonedGames ) {
-                if ( oClonedGames.hasOwnProperty( gId ) ) oAllGames[gId] = oClonedGames[gId];
+            var oGames = ( bUseRealScores === true ) ? oPoule.getGames() : getClonedGamesFromUserBets( oPoule, oRoundBetConfig );
+            for ( var gId in oGames ) {
+                if ( oGames.hasOwnProperty( gId ) ) oAllGames[gId] = oGames[gId];
             }
             var ranking = new VoetbalOog_Ranking( oRound.getCompetitionSeason().getPromotionRule() );
-            ranking.updatePoulePlaceRankings( oClonedGames, null );
-            var arrRanked = ranking.getPoulePlacesByRanking( oClonedGames, null );
+            ranking.updatePoulePlaceRankings( oGames, null );
+            var arrRanked = ranking.getPoulePlacesByRanking( oGames, null );
             if ( arrRanked.length >= 3 && arrRanked[2] ) {
                 oPoulePlaces[ oPoule.getId() ] = arrRanked[2];
             }
@@ -2110,7 +2111,7 @@ function Ctrl_BetEdit( oPoolUser, tsNow, sDivId ) {
         }
     }
 
-    function getClonedGames( oPoule, oRoundBetConfig )
+    function getClonedGamesFromUserBets( oPoule, oRoundBetConfig )
     {
         var oClonedGames = new Object();
         var oGames = oPoule.getGames();
@@ -2575,6 +2576,27 @@ function Ctrl_BetEdit( oPoolUser, tsNow, sDivId ) {
         }
         return null;
     }
+
+    this.showThirdPlaceRanking = function( oContainer )
+    {
+        var oPool = m_oPoolUser.getPool();
+        var oRound0 = null;
+        var oRounds = oPool.getCompetitionSeason().getRounds();
+        for ( var nI in oRounds ) {
+            if ( oRounds.hasOwnProperty(nI) && oRounds[nI].getNumber() === 0 ) {
+                oRound0 = oRounds[nI];
+                break;
+            }
+        }
+        if ( oRound0 == null ) return;
+        var oRoundBetConfigs = oPool.getBetConfigs( oRound0 );
+        var oRoundBetConfig3 = oRoundBetConfigs[VoetbalOog_Bet_Score.nId];
+        if ( oRoundBetConfig3 == undefined )
+            oRoundBetConfig3 = oRoundBetConfigs[VoetbalOog_Bet_Result.nId];
+        while ( oContainer.hasChildNodes() )
+            oContainer.removeChild( oContainer.lastChild );
+        updateThirdPlaceStandings( oRound0, null, oContainer, true );
+    };
 
     this.putHelper = function( oBetHelper )
     {
